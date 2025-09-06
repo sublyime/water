@@ -1,0 +1,40 @@
+C:.
+├───main
+│   ├───java
+│   │   └───com
+│   │       └───dispersion
+│   │           │   DispersionApplication.java
+│   │           │
+│   │           ├───config
+│   │           ├───controller
+│   │           │       DispersionController.java
+│   │           │
+│   │           ├───dto
+│   │           │       DispersionResponse.java
+│   │           │       SpillRequest.java
+│   │           │
+│   │           ├───model
+│   │           │       Spill.java
+│   │           │       TideData.java
+│   │           │       WeatherData.java
+│   │           │
+│   │           ├───repository
+│   │           │       SpillRepository.java
+│   │           │       TideRepository.java
+│   │           │       WeatherRepository.java
+│   │           │
+│   │           └───service
+│   │                   DispersionService.java
+│   │                   FluidDynamicsService.java
+│   │                   TideService.java
+│   │                   WeatherService.java
+│   │
+│   └───resources
+│       │   application.yml
+│       │
+│       └───db
+│           └───migration
+│                   V1__initial_schema.sql
+│
+└───test
+PS C:\water\chemical-dispersion-app\backend\src> 

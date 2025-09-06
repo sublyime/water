@@ -26,6 +26,7 @@ external-apis:
 
 logging:
   level:
-    org.hibernate.SQL: DEBUG
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
-    org.flywaydb: DEBUG
+    root: DEBUG
+    org.springframework.web: DEBUG
+    com.dispersion: DEBUG  # Your package
+

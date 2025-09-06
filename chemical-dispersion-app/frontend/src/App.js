@@ -56,9 +56,13 @@ function App() {
         <Route path="/spill" element={<SpillForm onSpillCreated={handleSpillCreated} />} />
         <Route path="/weather" element={<WeatherPanel />} />
         <Route path="/map" element={
-          <div style={{ position: 'relative' }}>
-            <BaseMap onPlaceSelected={handleLocationSelect} />
-            <SlidingPanel location={selectedLocation} />
+          <div style={{ display: 'flex', height: '100vh' }}>
+            <div style={{ flex: '1', position: 'relative' }}>
+              <BaseMap onPlaceSelected={handleLocationSelect} />
+            </div>
+            <div style={{ width: '300px', position: 'relative' }}>
+              <SlidingPanel location={selectedLocation} />
+            </div>
           </div>
         } />
         <Route path="/" element={<Navigate to="/dashboard" replace />} />

@@ -1,57 +1,63 @@
 package com.dispersion.service;
 
-import com.dispersion.dto.SpillRequest;
 import com.dispersion.dto.DispersionResponse;
+import com.dispersion.dto.SpillRequest;
+import com.dispersion.model.FluidDynamicsService;
 import com.dispersion.model.Spill;
-import com.dispersion.model.WeatherData;
-import com.dispersion.model.TideData;
 import com.dispersion.repository.SpillRepository;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 @Service
-@Transactional
 public class DispersionService {
 
     @Autowired
     private SpillRepository spillRepository;
 
-    @Autowired
-    private WeatherService weatherService;
-
-    @Autowired
-    private TideService tideService;
-
-    @Autowired
-    private FluidDynamicsService fluidDynamicsService;
-
-    public Spill createSpill(SpillRequest spillRequest) {
+    public Spill createSpill(SpillRequest request) {
         Spill spill = new Spill();
-        spill.setName(spillRequest.getName());
-        spill.setChemicalType(spillRequest.getChemicalType());
-        spill.setVolume(spillRequest.getVolume());
-        spill.setLatitude(spillRequest.getLatitude());
-        spill.setLongitude(spillRequest.getLongitude());
-        spill.setSpillTime(spillRequest.getSpillTime());
-        spill.setWaterDepth(spillRequest.getWaterDepth());
+        spill.setName(request.getName());
+        spill.setChemicalType(request.getChemicalType());
+        spill.setVolume(request.getVolume());
+        spill.setLatitude(request.getLatitude());
+        spill.setLongitude(request.getLongitude());
+        spill.setSpillTime(request.getSpillTime());
+        spill.setWaterDepth(request.getWaterDepth());
         spill.setStatus(Spill.SpillStatus.ACTIVE);
         return spillRepository.save(spill);
     }
 
-    public List<Spill> getAllSpills() {
-        return spillRepository.findAll();
+    public DispersionResponse calculateDispersion(UUID spillId, int simulationHours) {
+        Spill spill = getSpillById(spillId);
+        FluidDynamicsService.DispersionResult result = simulateDispersion(spill, simulationHours);
+
+        DispersionResponse response = new DispersionResponse();
+        response.setSpillId(spill.getId());
+        response.setSimulationHours(simulationHours);
+        // Set other fields based on the simulation results
+        return response;
     }
 
-    public Spill getSpillById(UUID id) {
-        return spillRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Spill not found with id: " + id));
+    private FluidDynamicsService.DispersionResult simulateDispersion(Spill spill, int hours) {
+        // Implement your dispersion logic here
+        return new FluidDynamicsService.DispersionResult();
     }
+
+    public Spill getSpillById(UUID spillId) {
+        return spillRepository.findById(spillId)
+                .orElseThrow(() -> new RuntimeException("Spill not found with id: " + spillId));
+    }
+
+    // Other methods remain unchanged
+}
 
     public DispersionResponse calculateDispersion(UUID spillId, int simulationHours) {
         Spill spill = getSpillById(spillId);
