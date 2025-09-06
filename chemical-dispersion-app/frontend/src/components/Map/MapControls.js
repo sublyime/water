@@ -12,51 +12,37 @@ const MapControls = ({
   return (
     <div className="map-controls">
       <div className="control-group">
-        <label htmlFor="simulation-hours">Simulation Hours:</label>
+        <label>Simulation Hours</label>
         <select
-          id="simulation-hours"
+          className="control-select"
           value={simulationHours}
           onChange={(e) => onSimulationHoursChange(parseInt(e.target.value))}
-          className="control-select"
         >
-          <option value={6}>6 Hours</option>
-          <option value={12}>12 Hours</option>
-          <option value={24}>24 Hours</option>
-          <option value={48}>48 Hours</option>
-          <option value={72}>72 Hours</option>
+          <option value={6}>6 hours</option>
+          <option value={12}>12 hours</option>
+          <option value={24}>24 hours</option>
+          <option value={48}>48 hours</option>
+          <option value={72}>72 hours</option>
         </select>
       </div>
-
       <div className="control-group">
+        <label>Show Dispersion</label>
         <label className="control-checkbox">
           <input
             type="checkbox"
             checked={showDispersion}
-            onChange={(e) => onShowDispersionToggle(e.target.checked)}
+            onChange={onShowDispersionToggle}
           />
-          <span className="checkmark"></span>
-          Show Dispersion
+          Display on Map
         </label>
       </div>
-
-      <div className="control-group">
-        <button
-          className="btn btn-primary"
-          onClick={onCalculateDispersion}
-          disabled={isCalculating || !hasSelectedSpill}
-        >
-          {isCalculating ? (
-            <>
-              <div className="btn-spinner"></div>
-              Calculating...
-            </>
-          ) : (
-            <>
-              🧮 Calculate Dispersion
-            </>
-          )}
-        </button>
-      </div>
+      <button
+        className="btn btn-primary"
+        onClick={onCalculateDispersion}
+        disabled={isCalculating || !hasSelectedSpill}
+      >
+        {isCalculating ? 'Calculating...' : 'Run Simulation'}
+      </button>
     </div>
   );
 };

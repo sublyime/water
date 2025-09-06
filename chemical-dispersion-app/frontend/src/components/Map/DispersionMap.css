@@ -381,7 +381,7 @@
     grid-template-columns: 1fr;
     grid-template-rows: auto auto 1fr;
   }
-  
+
   .spills-sidebar {
     grid-column: 1;
     grid-row: 2;
@@ -390,18 +390,18 @@
     border-bottom: 1px solid #e2e8f0;
     max-height: 200px;
   }
-  
+
   .spills-list {
     flex-direction: row;
     overflow-x: auto;
     padding: 1rem;
   }
-  
+
   .spill-item {
     min-width: 250px;
     flex-shrink: 0;
   }
-  
+
   .map-wrapper {
     grid-row: 3;
   }
@@ -413,5 +413,4 @@
     gap: 1rem;
     align-items: stretch;
   }
-  
-  .
+}

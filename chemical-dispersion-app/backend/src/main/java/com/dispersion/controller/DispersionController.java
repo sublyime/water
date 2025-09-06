@@ -4,9 +4,9 @@ import com.dispersion.dto.SpillRequest;
 import com.dispersion.dto.DispersionResponse;
 import com.dispersion.model.Spill;
 import com.dispersion.service.DispersionService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
+
 import jakarta.validation.Valid;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,15 +16,13 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/v1/dispersion")
+@RequestMapping("/api/v1/dispersion")
 @CrossOrigin(origins = "http://localhost:3000")
-@Tag(name = "Dispersion", description = "Chemical spill dispersion modeling API")
 public class DispersionController {
 
     @Autowired
     private DispersionService dispersionService;
 
-    @Operation(summary = "Create a new chemical spill incident")
     @PostMapping("/spills")
     public ResponseEntity<Spill> createSpill(@Valid @RequestBody SpillRequest spillRequest) {
         try {
@@ -35,14 +33,12 @@ public class DispersionController {
         }
     }
 
-    @Operation(summary = "Get all spill incidents")
     @GetMapping("/spills")
     public ResponseEntity<List<Spill>> getAllSpills() {
         List<Spill> spills = dispersionService.getAllSpills();
         return ResponseEntity.ok(spills);
     }
 
-    @Operation(summary = "Get spill by ID")
     @GetMapping("/spills/{id}")
     public ResponseEntity<Spill> getSpillById(@PathVariable UUID id) {
         try {
@@ -53,7 +49,6 @@ public class DispersionController {
         }
     }
 
-    @Operation(summary = "Calculate chemical dispersion for a spill")
     @PostMapping("/spills/{id}/calculate")
     public ResponseEntity<DispersionResponse> calculateDispersion(
             @PathVariable UUID id,
@@ -66,7 +61,6 @@ public class DispersionController {
         }
     }
 
-    @Operation(summary = "Get dispersion calculation history for a spill")
     @GetMapping("/spills/{id}/calculations")
     public ResponseEntity<List<DispersionResponse>> getCalculationHistory(@PathVariable UUID id) {
         try {
@@ -77,7 +71,6 @@ public class DispersionController {
         }
     }
 
-    @Operation(summary = "Update spill status")
     @PutMapping("/spills/{id}/status")
     public ResponseEntity<Spill> updateSpillStatus(
             @PathVariable UUID id,
@@ -91,7 +84,6 @@ public class DispersionController {
         }
     }
 
-    @Operation(summary = "Delete a spill incident")
     @DeleteMapping("/spills/{id}")
     public ResponseEntity<Void> deleteSpill(@PathVariable UUID id) {
         try {
@@ -102,7 +94,6 @@ public class DispersionController {
         }
     }
 
-    @Operation(summary = "Get spills within a geographic area")
     @GetMapping("/spills/area")
     public ResponseEntity<List<Spill>> getSpillsInArea(
             @RequestParam double minLat,

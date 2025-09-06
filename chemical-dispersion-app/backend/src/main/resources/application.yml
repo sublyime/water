@@ -1,57 +1,31 @@
-server:
-  port: 8080
-  servlet:
-    context-path: /api
-
 spring:
-  application:
-    n: chemical-dispersion-backend
-  
   datasource:
     url: jdbc:postgresql://localhost:5432/dispersion_db
     username: postgres
     password: ala1nna
-    driver-class-n: org.postgresql.Driver
-  
   jpa:
     hibernate:
-      ddl-auto: validate
-    show-sql: false
+      ddl-auto: update
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
-        format_sql: true
-  
+    show-sql: true
   flyway:
-    baseline-on-migrate: true
+    enabled: true
     locations: classpath:db/migration
-    
-  web:
-    cors:
-      allowed-origins: "http://localhost:3000"
-      allowed-methods: "GET,POST,PUT,DELETE,OPTIONS"
-      allowed-headers: "*"
-      allow-credentials: true
+    baseline-on-migrate: true  # Handles non-empty schema without history table
 
-# External API configurations
+# External APIs (added missing properties)
 external-apis:
-  noaa:
-    base-url: https://api.tidesandcurrents.noaa.gov/api/prod/datagetter
-    timeout: 10000
   nws:
-    base-url: https://api.weather.gov
-    timeout: 10000
-    user-agent: "ChemicalDispersionApp/1.0"
+    base-url: https://api.weather.gov  # National Weather Service base URL
+    user-agent: water-dispersion-app   # Custom user agent
+  noaa:
+    base-url: https://api.tidesandcurrents.noaa.gov/api/prod/datagetter  # NOAA tides base URL
+    user-agent: water-dispersion-app                                      # Custom user agent
 
-# Application specific configurations  
-dispersion:
-  calculation:
-    max-simulation-time: 72 # hours
-    grid-resolution: 100 # meters
-    time-step: 300 # seconds (5 minutes)
-  
 logging:
   level:
-    com.dispersion: DEBUG
-    org.springframework.web: INFO
     org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.flywaydb: DEBUG

@@ -2,7 +2,6 @@ package com.dispersion.model;
 
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -56,7 +55,6 @@ public class WeatherData {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    // Constructors
     public WeatherData() {
     }
 
@@ -66,116 +64,111 @@ public class WeatherData {
         this.timestamp = timestamp;
     }
 
-    // Getters and Setters
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
-
-    public BigDecimal getLatitude() {
-        return latitude;
-    }
-
+    // Setters (added for all fields mentioned in errors)
     public void setLatitude(BigDecimal latitude) {
         this.latitude = latitude;
-    }
-
-    public BigDecimal getLongitude() {
-        return longitude;
     }
 
     public void setLongitude(BigDecimal longitude) {
         this.longitude = longitude;
     }
 
-    public LocalDateTime getTimestamp() {
-        return timestamp;
-    }
-
     public void setTimestamp(LocalDateTime timestamp) {
         this.timestamp = timestamp;
-    }
-
-    public BigDecimal getTemperature() {
-        return temperature;
     }
 
     public void setTemperature(BigDecimal temperature) {
         this.temperature = temperature;
     }
 
-    public BigDecimal getHumidity() {
-        return humidity;
-    }
-
     public void setHumidity(BigDecimal humidity) {
         this.humidity = humidity;
-    }
-
-    public BigDecimal getPressure() {
-        return pressure;
     }
 
     public void setPressure(BigDecimal pressure) {
         this.pressure = pressure;
     }
 
-    public BigDecimal getWindSpeed() {
-        return windSpeed;
-    }
-
     public void setWindSpeed(BigDecimal windSpeed) {
         this.windSpeed = windSpeed;
-    }
-
-    public BigDecimal getWindDirection() {
-        return windDirection;
     }
 
     public void setWindDirection(BigDecimal windDirection) {
         this.windDirection = windDirection;
     }
 
-    public BigDecimal getWindGust() {
-        return windGust;
+    public void setVisibility(BigDecimal visibility) {
+        this.visibility = visibility;
     }
 
-    public void setWindGust(BigDecimal windGust) {
-        this.windGust = windGust;
+    // Getters (added for completeness; add others as needed)
+    public UUID getId() {
+        return id;
+    }
+
+    public BigDecimal getLatitude() {
+        return latitude;
+    }
+
+    public BigDecimal getLongitude() {
+        return longitude;
+    }
+
+    public LocalDateTime getTimestamp() {
+        return timestamp;
+    }
+
+    public BigDecimal getTemperature() {
+        return temperature;
+    }
+
+    public BigDecimal getHumidity() {
+        return humidity;
+    }
+
+    public BigDecimal getPressure() {
+        return pressure;
+    }
+
+    public BigDecimal getWindSpeed() {
+        return windSpeed;
+    }
+
+    public BigDecimal getWindDirection() {
+        return windDirection;
+    }
+
+    public BigDecimal getWindGust() {
+        return windGust;
     }
 
     public BigDecimal getVisibility() {
         return visibility;
     }
 
-    public void setVisibility(BigDecimal visibility) {
-        this.visibility = visibility;
-    }
-
     public BigDecimal getCloudCover() {
         return cloudCover;
-    }
-
-    public void setCloudCover(BigDecimal cloudCover) {
-        this.cloudCover = cloudCover;
     }
 
     public BigDecimal getPrecipitation() {
         return precipitation;
     }
 
-    public void setPrecipitation(BigDecimal precipitation) {
-        this.precipitation = precipitation;
-    }
-
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
+    // Add setters for remaining fields if needed (e.g., windGust, cloudCover,
+    // precipitation)
+    public void setWindGust(BigDecimal windGust) {
+        this.windGust = windGust;
+    }
+
+    public void setCloudCover(BigDecimal cloudCover) {
+        this.cloudCover = cloudCover;
+    }
+
+    public void setPrecipitation(BigDecimal precipitation) {
+        this.precipitation = precipitation;
     }
 }

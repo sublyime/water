@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.annotations.GenericGenerator;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -14,15 +15,17 @@ import java.util.UUID;
 public class Spill {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(generator = "UUID")
+    @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")
+    @Column(updatable = false, nullable = false)
     private UUID id;
 
     @NotBlank(message = "Spill name is required")
-    @Column(nullable = false)
+    @Column(nullable = false, length = 100)
     private String name;
 
     @NotBlank(message = "Chemical type is required")
-    @Column(name = "chemical_type", nullable = false)
+    @Column(name = "chemical_type", nullable = false, length = 100)
     private String chemicalType;
 
     @NotNull(message = "Volume is required")
@@ -54,14 +57,13 @@ public class Spill {
     private SpillStatus status = SpillStatus.ACTIVE;
 
     @CreationTimestamp
-    @Column(name = "created_at")
+    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    // Constructors
     public Spill() {
     }
 
@@ -75,7 +77,8 @@ public class Spill {
         this.spillTime = spillTime;
     }
 
-    // Getters and Setters
+    // ✅ Getters and Setters
+
     public UUID getId() {
         return id;
     }
@@ -152,16 +155,8 @@ public class Spill {
         return createdAt;
     }
 
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
     }
 
     public enum SpillStatus {

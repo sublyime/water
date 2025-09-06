@@ -233,12 +233,8 @@ code {
 }
 
 @keyframes slideDown {
-  from {
-    transform: translateY(-100%);
-  }
-  to {
-    transform: translateY(0);
-  }
+  from { transform: translateY(-100%); }
+  to { transform: translateY(0); }
 }
 
 .banner-content {
@@ -430,15 +426,15 @@ code {
     flex-wrap: wrap;
     gap: 1rem;
   }
-  
+
   .app-main {
     padding: 1rem;
   }
-  
+
   .grid-cols-4 {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .grid-cols-3 {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -449,22 +445,22 @@ code {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .main-nav {
     justify-content: center;
     flex-wrap: wrap;
   }
-  
+
   .nav-btn {
     flex: 1;
     min-width: 120px;
     justify-content: center;
   }
-  
+
   .grid-cols-2 {
     grid-template-columns: 1fr;
   }
-  
+
   .floating-actions {
     bottom: 1rem;
     right: 1rem;

@@ -1,4 +1,4 @@
--- Chemical Dispersion Database Schema
+-- Chemical Dispersion Database Schema for Water Spills
 
 -- Create extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -100,25 +100,21 @@ CREATE TABLE monitoring_stations (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create indexes for better performance
+-- Indexes
 CREATE INDEX idx_spills_location ON spills USING GIST(location);
 CREATE INDEX idx_spills_spill_time ON spills(spill_time);
 CREATE INDEX idx_spills_status ON spills(status);
-
 CREATE INDEX idx_weather_location_time ON weather_data(latitude, longitude, timestamp);
 CREATE INDEX idx_weather_timestamp ON weather_data(timestamp);
-
 CREATE INDEX idx_tide_station_time ON tide_data(station_id, timestamp);
 CREATE INDEX idx_tide_location ON tide_data(latitude, longitude);
-
 CREATE INDEX idx_dispersion_spill_id ON dispersion_results(spill_id);
 CREATE INDEX idx_dispersion_calculation_time ON dispersion_results(calculation_time);
 CREATE INDEX idx_dispersion_area ON dispersion_results USING GIST(dispersion_area);
-
 CREATE INDEX idx_stations_location ON monitoring_stations USING GIST(location);
 CREATE INDEX idx_stations_type ON monitoring_stations(station_type);
 
--- Insert some default chemical properties
+-- Default chemical properties
 INSERT INTO chemical_properties (name, density, viscosity, solubility, vapor_pressure, diffusion_coefficient, decay_rate, toxicity_level, environmental_fate) VALUES
 ('Crude Oil', 870.0, 0.001, 0.005, 1.0, 0.0000001, 0.0000001, 'HIGH', 'Forms slicks on surface, biodegrades slowly'),
 ('Diesel Fuel', 832.0, 0.0024, 0.1, 200.0, 0.0000002, 0.0000002, 'MEDIUM', 'Partially soluble, evaporates quickly'),
@@ -126,7 +122,7 @@ INSERT INTO chemical_properties (name, density, viscosity, solubility, vapor_pre
 ('Benzene', 876.5, 0.00065, 1780.0, 12700.0, 0.0000009, 0.0000003, 'EXTREME', 'Highly toxic carcinogen, volatile'),
 ('Toluene', 866.9, 0.00056, 515.0, 3800.0, 0.0000008, 0.0000004, 'HIGH', 'Moderately toxic, biodegradable');
 
--- Insert some monitoring stations (examples for major US ports)
+-- Default monitoring stations
 INSERT INTO monitoring_stations (station_code, name, latitude, longitude, station_type, operator) VALUES
 ('8518750', 'The Battery, NY', 40.7000, -74.0142, 'TIDE', 'NOAA'),
 ('9414290', 'San Francisco, CA', 37.8063, -122.4659, 'TIDE', 'NOAA'),
