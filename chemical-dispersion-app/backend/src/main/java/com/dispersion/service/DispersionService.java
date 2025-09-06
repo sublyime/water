@@ -2,8 +2,9 @@ package com.dispersion.service;
 
 import com.dispersion.dto.DispersionResponse;
 import com.dispersion.dto.SpillRequest;
-import com.dispersion.model.FluidDynamicsService;
 import com.dispersion.model.Spill;
+import com.dispersion.model.WeatherData;
+import com.dispersion.model.TideData;
 import com.dispersion.repository.SpillRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -22,6 +23,15 @@ public class DispersionService {
     @Autowired
     private SpillRepository spillRepository;
 
+    @Autowired
+    private WeatherService weatherService;
+
+    @Autowired
+    private TideService tideService;
+
+    @Autowired
+    private FluidDynamicsService fluidDynamicsService;
+
     public Spill createSpill(SpillRequest request) {
         Spill spill = new Spill();
         spill.setName(request.getName());
@@ -34,30 +44,6 @@ public class DispersionService {
         spill.setStatus(Spill.SpillStatus.ACTIVE);
         return spillRepository.save(spill);
     }
-
-    public DispersionResponse calculateDispersion(UUID spillId, int simulationHours) {
-        Spill spill = getSpillById(spillId);
-        FluidDynamicsService.DispersionResult result = simulateDispersion(spill, simulationHours);
-
-        DispersionResponse response = new DispersionResponse();
-        response.setSpillId(spill.getId());
-        response.setSimulationHours(simulationHours);
-        // Set other fields based on the simulation results
-        return response;
-    }
-
-    private FluidDynamicsService.DispersionResult simulateDispersion(Spill spill, int hours) {
-        // Implement your dispersion logic here
-        return new FluidDynamicsService.DispersionResult();
-    }
-
-    public Spill getSpillById(UUID spillId) {
-        return spillRepository.findById(spillId)
-                .orElseThrow(() -> new RuntimeException("Spill not found with id: " + spillId));
-    }
-
-    // Other methods remain unchanged
-}
 
     public DispersionResponse calculateDispersion(UUID spillId, int simulationHours) {
         Spill spill = getSpillById(spillId);
@@ -176,7 +162,6 @@ public class DispersionService {
     }
 
     public List<DispersionResponse> getCalculationHistory(UUID spillId) {
-        // Implement if you add a calculations table; for now, return empty
         return new ArrayList<>();
     }
 
@@ -206,5 +191,10 @@ public class DispersionService {
     public List<Spill> getRecentSpills(int hoursBack) {
         LocalDateTime since = LocalDateTime.now().minusHours(hoursBack);
         return spillRepository.findActiveSpillsSince(Spill.SpillStatus.ACTIVE, since);
+    }
+
+    public Spill getSpillById(UUID spillId) {
+        return spillRepository.findById(spillId)
+                .orElseThrow(() -> new RuntimeException("Spill not found with id: " + spillId));
     }
 }

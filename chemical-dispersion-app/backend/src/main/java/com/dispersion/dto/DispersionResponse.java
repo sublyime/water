@@ -3,6 +3,7 @@ package com.dispersion.dto;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 public class DispersionResponse {
 
@@ -16,6 +17,7 @@ public class DispersionResponse {
     private BigDecimal affectedAreaKm2;
     private Map<String, Object> metadata;
 
+    // Getters and setters
     public UUID getSpillId() {
         return spillId;
     }
@@ -88,25 +90,101 @@ public class DispersionResponse {
         this.metadata = metadata;
     }
 
+    // Inner classes
     public static class ConcentrationPoint {
         private BigDecimal latitude;
         private BigDecimal longitude;
         private BigDecimal concentration;
 
-        // Constructors, getters, and setters
-    }
+        public ConcentrationPoint() {
+        }
 
-    public static class PlumeContour {
-        private String level;
-        private List<LatLngPoint> points;
+        public ConcentrationPoint(BigDecimal latitude, BigDecimal longitude, BigDecimal concentration) {
+            this.latitude = latitude;
+            this.longitude = longitude;
+            this.concentration = concentration;
+        }
 
-        // Constructors, getters, and setters
+        public BigDecimal getLatitude() {
+            return latitude;
+        }
+
+        public void setLatitude(BigDecimal latitude) {
+            this.latitude = latitude;
+        }
+
+        public BigDecimal getLongitude() {
+            return longitude;
+        }
+
+        public void setLongitude(BigDecimal longitude) {
+            this.longitude = longitude;
+        }
+
+        public BigDecimal getConcentration() {
+            return concentration;
+        }
+
+        public void setConcentration(BigDecimal concentration) {
+            this.concentration = concentration;
+        }
     }
 
     public static class LatLngPoint {
         private BigDecimal latitude;
         private BigDecimal longitude;
 
-        // Constructors, getters, and setters
+        public LatLngPoint() {
+        }
+
+        public LatLngPoint(BigDecimal latitude, BigDecimal longitude) {
+            this.latitude = latitude;
+            this.longitude = longitude;
+        }
+
+        public BigDecimal getLatitude() {
+            return latitude;
+        }
+
+        public void setLatitude(BigDecimal latitude) {
+            this.latitude = latitude;
+        }
+
+        public BigDecimal getLongitude() {
+            return longitude;
+        }
+
+        public void setLongitude(BigDecimal longitude) {
+            this.longitude = longitude;
+        }
+    }
+
+    public static class PlumeContour {
+        private String concentrationLevel;
+        private List<LatLngPoint> points;
+
+        public PlumeContour() {
+        }
+
+        public PlumeContour(String concentrationLevel, List<LatLngPoint> points) {
+            this.concentrationLevel = concentrationLevel;
+            this.points = points;
+        }
+
+        public String getConcentrationLevel() {
+            return concentrationLevel;
+        }
+
+        public void setConcentrationLevel(String concentrationLevel) {
+            this.concentrationLevel = concentrationLevel;
+        }
+
+        public List<LatLngPoint> getPoints() {
+            return points;
+        }
+
+        public void setPoints(List<LatLngPoint> points) {
+            this.points = points;
+        }
     }
 }

@@ -31,8 +31,6 @@ public class TideService {
 
     public List<TideData> getTideForecast(double latitude, double longitude, int hours) {
         try {
-            // For now, return empty list or implement actual tide forecast logic
-            // You might need to convert lat/lon to a station ID first
             return new ArrayList<>();
         } catch (Exception ex) {
             System.err.println("Error getting tide forecast: " + ex.getMessage());
@@ -40,21 +38,11 @@ public class TideService {
         }
     }
 
-    /**
-     * Fetch tide predictions from NOAA CO-OPS.
-     *
-     * @param stationId e.g., "8771341"
-     * @param start     inclusive
-     * @param end       inclusive
-     * @param datum     e.g., "MLLW" or "NAVD"
-     * @return list of [timestamp, valueMeters]
-     */
     public List<TidePoint> getTidePredictions(String stationId,
             LocalDateTime start,
             LocalDateTime end,
             String datum) {
         try {
-            // NOAA expects times as YYYYMMDD HH:mm
             DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyyMMdd HH:mm");
             String beginStr = start.format(fmt);
             String endStr = end.format(fmt);
@@ -89,8 +77,8 @@ public class TideService {
             if (predictions != null && predictions.isArray()) {
                 DateTimeFormatter inFmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
                 for (JsonNode p : predictions) {
-                    String t = p.get("t").asText(); // "yyyy-MM-dd HH:mm"
-                    double v = Double.parseDouble(p.get("v").asText()); // meters (units=metric)
+                    String t = p.get("t").asText();
+                    double v = Double.parseDouble(p.get("v").asText());
                     out.add(new TidePoint(LocalDateTime.parse(t, inFmt), v));
                 }
             }

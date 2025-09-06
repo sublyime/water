@@ -1,32 +1,52 @@
 spring:
+  application:
+    name: water-dispersion-model
   datasource:
     url: jdbc:postgresql://localhost:5432/dispersion_db
     username: postgres
     password: ala1nna
+    driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
       ddl-auto: update
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
     show-sql: true
-  flyway:
-    enabled: true
-    locations: classpath:db/migration
-    baseline-on-migrate: true  # Handles non-empty schema without history table
+  web:
+    resources:
+      add-mappings: false
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
 
-# External APIs (added missing properties)
+server:
+  port: 4000
+  servlet:
+    context-path: /api
+
 external-apis:
   nws:
-    base-url: https://api.weather.gov  # National Weather Service base URL
-    user-agent: water-dispersion-app   # Custom user agent
+    base-url: https://api.weather.gov
+    user-agent: water-dispersion-app/1.0
   noaa:
-    base-url: https://api.tidesandcurrents.noaa.gov/api/prod/datagetter  # NOAA tides base URL
-    user-agent: water-dispersion-app                                      # Custom user agent
+    base-url: https://api.tidesandcurrents.noaa.gov/api/prod/datagetter
+    user-agent: water-dispersion-app/1.0
 
 logging:
   level:
-    root: DEBUG
-    org.springframework.web: DEBUG
-    com.dispersion: DEBUG  # Your package
+    com.dispersion: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
 
+app:
+  simulation:
+    default-hours: 24
+    grid-cell-size: 100.0
+    grid-size: 50
+  cleanup:
+    retention-days: 30

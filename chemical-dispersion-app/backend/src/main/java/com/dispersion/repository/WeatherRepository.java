@@ -23,7 +23,6 @@ public interface WeatherRepository extends JpaRepository<WeatherData, UUID> {
                         @Param("startTime") LocalDateTime startTime,
                         @Param("endTime") LocalDateTime endTime);
 
-        // Option 1: JPQL with Pageable (preferred, portable)
         @Query("SELECT w FROM WeatherData w WHERE " +
                         "SQRT(POWER(111.0 * (w.latitude - :lat), 2) + POWER(111.0 * COS(RADIANS(:lat)) * (w.longitude - :lon), 2)) <= :radiusKm "
                         +

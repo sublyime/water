@@ -189,7 +189,6 @@ public class WeatherService {
                 double windDir = parseWindDirection(windDirection);
                 weather.setWindDirection(BigDecimal.valueOf(windDir));
 
-                // Defaults where not provided
                 weather.setPressure(BigDecimal.valueOf(101_325.0));
                 weather.setVisibility(BigDecimal.valueOf(10_000.0));
 
@@ -210,13 +209,13 @@ public class WeatherService {
                 double min = Double.parseDouble(parts[0].trim());
                 double max = Double.parseDouble(parts[1].trim());
                 double avgMph = (min + max) / 2.0;
-                return avgMph * 0.44704; // mph -> m/s
+                return avgMph * 0.44704;
             } else {
                 double mph = Double.parseDouble(s);
                 return mph * 0.44704;
             }
         } catch (Exception e) {
-            return 5.0; // default m/s
+            return 5.0;
         }
     }
 
@@ -255,7 +254,7 @@ public class WeatherService {
             case "NNW":
                 return 337.5;
             default:
-                return 270.0; // default West
+                return 270.0;
         }
     }
 
@@ -268,7 +267,6 @@ public class WeatherService {
             weather.setLongitude(BigDecimal.valueOf(longitude));
             weather.setTimestamp(now.plusHours(i));
 
-            // Simulate daily temperature variation around 15 °C
             double tempVariation = Math.sin(i * Math.PI / 12) * 5;
             weather.setTemperature(BigDecimal.valueOf(15.0 + tempVariation));
             weather.setHumidity(BigDecimal.valueOf(70.0));

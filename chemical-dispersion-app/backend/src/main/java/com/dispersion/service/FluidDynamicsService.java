@@ -7,25 +7,9 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Simple 2D advection-diffusion helpers for water dispersion.
- * This is intentionally lightweight and deterministic for production use.
- */
 @Service
 public class FluidDynamicsService {
 
-    /**
-     * Steady-state Gaussian-like concentration at (x,y) down-current from a source
-     * at (0,0).
-     * Units are arbitrary; be consistent (e.g., meters, m^3/s, m/s).
-     *
-     * @param sourceStrength Q (mass per time), e.g., g/s
-     * @param currentU       mean current speed in +x (m/s)
-     * @param diffY          lateral eddy diffusivity (m^2/s)
-     * @param x              down-current distance (m), must be > 0 for advection
-     * @param y              cross-current offset (m)
-     * @return concentration (mass / volume), scaled by a nominal depth
-     */
     public double concentrationAt(double sourceStrength,
             double currentU,
             double diffY,
@@ -35,24 +19,12 @@ public class FluidDynamicsService {
         if (currentU <= 0 || x <= 0 || depth <= 0 || diffY <= 0) {
             return 0.0;
         }
-        // Lateral spread ~ sqrt(2*K_y*x/U)
         double sigmaY = Math.sqrt(2.0 * diffY * x / currentU);
         double norm = sourceStrength / (Math.sqrt(2.0 * Math.PI) * sigmaY * currentU * depth);
         double gy = Math.exp(-(y * y) / (2.0 * sigmaY * sigmaY));
         return norm * gy;
     }
 
-    /**
-     * Sample a centerline (y=0) plume along x = [dx, 2dx, ..., n*dx].
-     *
-     * @param sourceStrength Q
-     * @param currentU       U
-     * @param diffY          K_y
-     * @param depth          water depth
-     * @param dx             step (m)
-     * @param steps          number of points
-     * @return list of (x, C) pairs
-     */
     public List<Point> centerlinePlume(double sourceStrength,
             double currentU,
             double diffY,
@@ -71,10 +43,8 @@ public class FluidDynamicsService {
     public DispersionResult calculateDispersion(double latitude, double longitude, double volume,
             String chemicalType, List<WeatherData> weatherData,
             List<TideData> tideData, int simulationHours) {
-        // Create a simple dispersion grid for demonstration
         DispersionGrid grid = new DispersionGrid(latitude, longitude, 100.0, 50);
 
-        // Simple simulation - you'll want to implement proper fluid dynamics here
         double maxConcentration = 0;
         double totalMass = 0;
 

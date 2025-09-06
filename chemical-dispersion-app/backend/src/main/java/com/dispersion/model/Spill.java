@@ -1,7 +1,7 @@
 package com.dispersion.model;
 
-import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
+import javax.persistence.*;
+import javax.validation.constraints.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.GenericGenerator;
@@ -31,7 +31,7 @@ public class Spill {
     @NotNull(message = "Volume is required")
     @DecimalMin(value = "0.0", inclusive = false, message = "Volume must be positive")
     @Column(precision = 12, scale = 2, nullable = false)
-    private BigDecimal volume; // in liters
+    private BigDecimal volume;
 
     @NotNull(message = "Latitude is required")
     @DecimalMin(value = "-90.0", message = "Latitude must be between -90 and 90")
@@ -49,11 +49,13 @@ public class Spill {
     @Column(name = "spill_time", nullable = false)
     private LocalDateTime spillTime;
 
-    @Column(name = "water_depth", precision = 8, scale = 2)
-    private BigDecimal waterDepth; // in meters
+    @NotNull(message = "Water depth is required")
+    @DecimalMin(value = "0.0", inclusive = false, message = "Water depth must be positive")
+    @Column(name = "water_depth", precision = 8, scale = 2, nullable = false)
+    private BigDecimal waterDepth;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 20)
     private SpillStatus status = SpillStatus.ACTIVE;
 
     @CreationTimestamp
@@ -64,20 +66,24 @@ public class Spill {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    public Spill() {
-    }
+    @Column(name = "cleanup_completed_at")
+    private LocalDateTime cleanupCompletedAt;
 
-    public Spill(String name, String chemicalType, BigDecimal volume,
-            BigDecimal latitude, BigDecimal longitude, LocalDateTime spillTime) {
-        this.name = name;
-        this.chemicalType = chemicalType;
-        this.volume = volume;
-        this.latitude = latitude;
-        this.longitude = longitude;
-        this.spillTime = spillTime;
-    }
+    @Column(length = 500)
+    private String description;
 
-    // ✅ Getters and Setters
+    @Column(name = "reported_by", length = 100)
+    private String reportedBy;
+
+    @Column(name = "contact_phone", length = 20)
+    private String contactPhone;
+
+    @Column(name = "contact_email", length = 100)
+    private String contactEmail;
+
+    public enum SpillStatus {
+        ACTIVE, CONTAINED, CLEANED_UP, MONITORING, ARCHIVED
+    }
 
     public UUID getId() {
         return id;
@@ -155,11 +161,55 @@ public class Spill {
         return createdAt;
     }
 
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
     }
 
-    public enum SpillStatus {
-        ACTIVE, CONTAINED, CLEANED, ARCHIVED
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    public LocalDateTime getCleanupCompletedAt() {
+        return cleanupCompletedAt;
+    }
+
+    public void setCleanupCompletedAt(LocalDateTime cleanupCompletedAt) {
+        this.cleanupCompletedAt = cleanupCompletedAt;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getReportedBy() {
+        return reportedBy;
+    }
+
+    public void setReportedBy(String reportedBy) {
+        this.reportedBy = reportedBy;
+    }
+
+    public String getContactPhone() {
+        return contactPhone;
+    }
+
+    public void setContactPhone(String contactPhone) {
+        this.contactPhone = contactPhone;
+    }
+
+    public String getContactEmail() {
+        return contactEmail;
+    }
+
+    public void setContactEmail(String contactEmail) {
+        this.contactEmail = contactEmail;
     }
 }

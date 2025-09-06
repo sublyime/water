@@ -15,25 +15,25 @@ import java.util.UUID;
 @Repository
 public interface TideRepository extends JpaRepository<TideData, UUID> {
 
-    List<TideData> findByStationIdAndTimestampBetweenOrderByTimestamp(
-            String stationId, LocalDateTime startTime, LocalDateTime endTime);
+        List<TideData> findByStationIdAndTimestampBetweenOrderByTimestamp(
+                        String stationId, LocalDateTime startTime, LocalDateTime endTime);
 
-    List<TideData> findByStationIdOrderByTimestampDesc(String stationId);
+        List<TideData> findByStationIdOrderByTimestampDesc(String stationId);
 
-    Optional<TideData> findTopByStationIdOrderByTimestampDesc(String stationId);
+        Optional<TideData> findTopByStationIdOrderByTimestampDesc(String stationId);
 
-    @Query("SELECT t FROM TideData t WHERE " +
-            "SQRT(POWER(111.0 * (t.latitude - :lat), 2) + POWER(111.0 * COS(RADIANS(:lat)) * (t.longitude - :lon), 2)) <= :radiusKm "
-            +
-            "AND t.timestamp BETWEEN :startTime AND :endTime ORDER BY " +
-            "SQRT(POWER(111.0 * (t.latitude - :lat), 2) + POWER(111.0 * COS(RADIANS(:lat)) * (t.longitude - :lon), 2)), t.timestamp")
-    List<TideData> findNearestTideData(@Param("lat") BigDecimal latitude,
-            @Param("lon") BigDecimal longitude,
-            @Param("startTime") LocalDateTime startTime,
-            @Param("endTime") LocalDateTime endTime,
-            @Param("radiusKm") double radiusKm);
+        @Query("SELECT t FROM TideData t WHERE " +
+                        "SQRT(POWER(111.0 * (t.latitude - :lat), 2) + POWER(111.0 * COS(RADIANS(:lat)) * (t.longitude - :lon), 2)) <= :radiusKm "
+                        +
+                        "AND t.timestamp BETWEEN :startTime AND :endTime ORDER BY " +
+                        "SQRT(POWER(111.0 * (t.latitude - :lat), 2) + POWER(111.0 * COS(RADIANS(:lat)) * (t.longitude - :lon), 2)), t.timestamp")
+        List<TideData> findNearestTideData(@Param("lat") BigDecimal latitude,
+                        @Param("lon") BigDecimal longitude,
+                        @Param("startTime") LocalDateTime startTime,
+                        @Param("endTime") LocalDateTime endTime,
+                        @Param("radiusKm") double radiusKm);
 
-    List<TideData> findByTimestampBetweenOrderByTimestamp(LocalDateTime start, LocalDateTime end);
+        List<TideData> findByTimestampBetweenOrderByTimestamp(LocalDateTime start, LocalDateTime end);
 
-    void deleteByTimestampBefore(LocalDateTime cutoffTime);
+        void deleteByTimestampBefore(LocalDateTime cutoffTime);
 }
