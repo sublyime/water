@@ -44,25 +44,31 @@ export const apiService = {
     const response = await api.get('/dispersion/spills');
     return response.data;
   },
+
   async getSpillById(id) {
     const response = await api.get(`/dispersion/spills/${id}`);
     return response.data;
   },
+
   async createSpill(spillData) {
     const response = await api.post('/dispersion/spills', spillData);
     return response.data;
   },
+
   async updateSpillStatus(id, status) {
     const response = await api.put(`/dispersion/spills/${id}/status`, null, { params: { status } });
     return response.data;
   },
+
   async deleteSpill(id) {
     await api.delete(`/dispersion/spills/${id}`);
   },
+
   async getSpillsInArea(minLat, maxLat, minLon, maxLon) {
     const response = await api.get('/dispersion/spills/area', { params: { minLat, maxLat, minLon, maxLon } });
     return response.data;
   },
+
   async calculateDispersion(spillId, simulationHours = 24) {
     const response = await api.post(`/dispersion/spills/${spillId}/calculate`, null, {
       params: { simulationHours },
@@ -70,30 +76,37 @@ export const apiService = {
     });
     return response.data;
   },
+
   async getCalculationHistory(spillId) {
     const response = await api.get(`/dispersion/spills/${spillId}/calculations`);
     return response.data;
   },
+
   async getCurrentWeather(latitude, longitude) {
     const response = await api.get('/weather/current', { params: { latitude, longitude } });
     return response.data;
   },
+
   async getWeatherForecast(latitude, longitude, hoursAhead = 72) {
     const response = await api.get('/weather/forecast', { params: { latitude, longitude, hoursAhead } });
     return response.data;
   },
+
   async getCurrentTideData(latitude, longitude) {
     const response = await api.get('/tide/current', { params: { latitude, longitude } });
     return response.data;
   },
+
   async getTideForecast(latitude, longitude, hoursAhead = 72) {
     const response = await api.get('/tide/forecast', { params: { latitude, longitude, hoursAhead } });
     return response.data;
   },
+
   async getAvailableStations() {
     const response = await api.get('/tide/stations');
     return response.data;
   },
+
   async healthCheck() {
     const response = await api.get('/health');
     return response.data;
@@ -102,17 +115,20 @@ export const apiService = {
 
 export const apiUtils = {
   async retry(apiCall, maxRetries = 3, delay = 1000) {
-    for (let i = 0; i < maxRetries; i++) {
+    let attempt = 0;
+    while (attempt < maxRetries) {
       try {
         return await apiCall();
       } catch (error) {
-        if (i === maxRetries - 1) throw error;
-        console.log(`🔄 Retrying API call (${i + 1}/${maxRetries}) in ${delay}ms...`);
+        attempt++;
+        if (attempt === maxRetries) throw error;
+        console.log(`🔄 Retrying API call (${attempt}/${maxRetries}) in ${delay}ms...`);
         await new Promise(resolve => setTimeout(resolve, delay));
         delay *= 2;
       }
     }
   },
+
   async batchRequests(requests, batchSize = 5, delay = 100) {
     const results = [];
     for (let i = 0; i < requests.length; i += batchSize) {
@@ -125,12 +141,14 @@ export const apiUtils = {
     }
     return results;
   },
+
   formatCoordinates(lat, lng, precision = 6) {
     return {
       latitude: parseFloat(lat.toFixed(precision)),
       longitude: parseFloat(lng.toFixed(precision))
     };
   },
+
   validateSpillData(spillData) {
     const required = ['name', 'chemicalType', 'volume', 'latitude', 'longitude', 'spillTime'];
     const errors = [];

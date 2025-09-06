@@ -12,7 +12,6 @@ function App() {
   const [activeSpills, setActiveSpills] = useState([]);
   const [selectedSpill, setSelectedSpill] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [currentView, setCurrentView] = useState('dashboard');
 
   useEffect(() => {
     loadActiveSpills();
@@ -33,7 +32,6 @@ function App() {
   const handleSpillCreated = (newSpill) => {
     setActiveSpills(prev => [...prev, newSpill]);
     setSelectedSpill(newSpill);
-    setCurrentView('map');
   };
 
   const handleSpillSelected = (spill) => {
@@ -41,26 +39,20 @@ function App() {
   };
 
   if (loading) {
-    return (
-      <div className="app-loading">
-        <div className="loading-spinner"></div>
-        <h2>Loading Water Dispersion App</h2>
-      </div>
-    );
+    return <div className="loading">Loading...</div>;  // Completed return statement
   }
 
   return (
     <Router>
-      <div className="App">
-        <Toaster position="top-right" />
-        <Routes>
-          <Route path="/" element={<Dashboard activeSpills={activeSpills} onSpillSelected={handleSpillSelected} />} />
-          <Route path="/map" element={<DispersionMap spills={activeSpills} selectedSpill={selectedSpill} onSpillSelected={handleSpillSelected} />} />
-          <Route path="/new-spill" element={<SpillForm onSpillCreated={handleSpillCreated} />} />
-          <Route path="/weather" element={<WeatherPanel />} />
-          <Route path="*" element={<Navigate to="/" />} />
-        </Routes>
-      </div>
+      <Toaster />
+      <Routes>
+        <Route path="/dashboard" element={<Dashboard spills={activeSpills} onSpillSelect={handleSpillSelected} onCreate={handleSpillCreated} />} />
+        <Route path="/map" element={<DispersionMap spills={activeSpills} selectedSpill={selectedSpill} />} />
+        <Route path="/spill" element={<SpillForm onSpillCreated={handleSpillCreated} />} />
+        <Route path="/weather" element={<WeatherPanel />} />
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      </Routes>
     </Router>
   );
 }
