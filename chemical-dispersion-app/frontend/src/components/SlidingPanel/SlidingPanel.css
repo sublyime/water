@@ -1,0 +1,72 @@
+/* src/components/SlidingPanel/SlidingPanel.css (Fixed syntax: Ensured all rules have matching braces) */
+
+.sliding-panel {
+  position: fixed;
+  right: 0;
+  top: 0;
+  height: 100vh;
+  width: 300px; /* Expanded width */
+  background-color: white;
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
+  transition: width 0.3s ease-in-out;
+  z-index: 1000;
+}
+
+.sliding-panel.collapsed {
+  width: 50px; /* Collapsed width (just icons) */
+}
+
+.panel-toggle {
+  position: absolute;
+  left: -30px;
+  top: 50%;
+  background: white;
+  border: 1px solid #ddd;
+  border-right: none;
+  padding: 10px;
+  cursor: pointer;
+}
+
+.panel-content {
+  padding: 20px;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.section-tabs {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 20px;
+}
+
+.tab {
+  padding: 10px;
+  background: #f0f0f0;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+}
+
+.tab.active {
+  background: #ddd;
+}
+
+.section-body {
+  /* Styles for section content */
+}
+
+.collapsed-icons {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  justify-content: center;
+  align-items: center;
+}
+
+.icon-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 10px;
+}
