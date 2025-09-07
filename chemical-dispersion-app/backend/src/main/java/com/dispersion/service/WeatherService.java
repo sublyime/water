@@ -1,7 +1,6 @@
 package com.dispersion.service;
 
 import com.dispersion.model.WeatherData;
-import com.dispersion.repository.WeatherRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
@@ -9,15 +8,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 @Service
 public class WeatherService {
 
-    private final WeatherRepository weatherRepository;
     private final WebClient webClient;
     private final ObjectMapper objectMapper;
 
@@ -28,138 +25,71 @@ public class WeatherService {
     private String userAgent;
 
     public WeatherService(
-            WeatherRepository weatherRepository,
             WebClient.Builder webClientBuilder,
             ObjectMapper objectMapper) {
-        this.weatherRepository = weatherRepository;
-        this.webClient = webClientBuilder.build();
+        this.webClient = webClientBuilder.baseUrl(nwsBaseUrl)
+                .defaultHeader("User-Agent", userAgent)
+                .build();
         this.objectMapper = objectMapper;
     }
 
     public WeatherData getCurrentWeather(double latitude, double longitude) {
-        try {
-            String gridUrl = String.format("%s/points/%.4f,%.4f", nwsBaseUrl, latitude, longitude);
-            String gridResponse = webClient.get()
-                    .uri(gridUrl)
-                    .header("User-Agent", userAgent)
-                    .retrieve()
-                    .bodyToMono(String.class)
-                    .block();
-
-            JsonNode root = objectMapper.readTree(gridResponse);
-            String forecastUrl = root.get("properties").get("forecast").asText();
-
-            String forecastResponse = webClient.get()
-                    .uri(forecastUrl)
-                    .header("User-Agent", userAgent)
-                    .retrieve()
-                    .bodyToMono(String.class)
-                    .block();
-
-            return parseNwsResponse(forecastResponse, latitude, longitude);
-        } catch (Exception ex) {
-            System.err.println("Error fetching weather data: " + ex.getMessage());
-            return getDefaultWeatherData(latitude, longitude);
+        // Return the first hour of the forecast as a representation of current weather
+        List<WeatherData> forecast = getWeatherForecast(latitude, longitude, 1);
+        if (forecast.isEmpty()) {
+            return new WeatherData();
         }
-    }
-
-    private WeatherData parseNwsResponse(String json, double latitude, double longitude) {
-        WeatherData weather = new WeatherData();
-        try {
-            JsonNode root = objectMapper.readTree(json);
-            JsonNode periods = root.get("properties").get("periods");
-            if (periods != null && periods.isArray() && periods.size() > 0) {
-                JsonNode firstPeriod = periods.get(0);
-                weather.setLatitude(BigDecimal.valueOf(latitude));
-                weather.setLongitude(BigDecimal.valueOf(longitude));
-                weather.setTimestamp(LocalDateTime.now());
-                weather.setTemperature(BigDecimal.valueOf(firstPeriod.get("temperature").asDouble()));
-                weather.setHumidity(BigDecimal.valueOf(firstPeriod.get("relativeHumidity").get("value").asDouble()));
-                weather.setWindSpeed(
-                        BigDecimal.valueOf(Double.parseDouble(firstPeriod.get("windSpeed").asText().split(" ")[0])));
-                weather.setWindDirection(
-                        BigDecimal.valueOf(getDirectionInDegrees(firstPeriod.get("windDirection").asText())));
-                weather.setPressure(BigDecimal.valueOf(0)); // NWS API does not provide pressure in this endpoint
-                weather.setVisibility(BigDecimal.valueOf(0));
-            }
-        } catch (Exception ex) {
-            System.err.println("Error parsing NWS weather response: " + ex.getMessage());
-        }
-        return weather;
-    }
-
-    private double getDirectionInDegrees(String direction) {
-        switch (direction.toUpperCase()) {
-            case "N":
-                return 0;
-            case "NNE":
-                return 22.5;
-            case "NE":
-                return 45;
-            case "ENE":
-                return 67.5;
-            case "E":
-                return 90;
-            case "ESE":
-                return 112.5;
-            case "SE":
-                return 135;
-            case "SSE":
-                return 157.5;
-            case "S":
-                return 180;
-            case "SSW":
-                return 202.5;
-            case "SW":
-                return 225;
-            case "WSW":
-                return 247.5;
-            case "W":
-                return 270;
-            case "WNW":
-                return 292.5;
-            case "NW":
-                return 315;
-            case "NNW":
-                return 337.5;
-            default:
-                return 0;
-        }
+        return forecast.get(0);
     }
 
     public List<WeatherData> getWeatherForecast(double latitude, double longitude, int hoursAhead) {
-        LocalDateTime now = LocalDateTime.now();
-        List<WeatherData> forecast = new ArrayList<>();
-        for (int i = 0; i < hoursAhead; i++) {
-            WeatherData weather = new WeatherData();
-            weather.setLatitude(BigDecimal.valueOf(latitude));
-            weather.setLongitude(BigDecimal.valueOf(longitude));
-            weather.setTimestamp(now.plusHours(i));
+        List<WeatherData> forecastList = new ArrayList<>();
+        try {
+            // Step 1: Get forecast grid from lat/lon
+            String gridPointsUrl = String.format("/points/%.4f,%.4f", latitude, longitude);
+            JsonNode gridResponse = webClient.get()
+                    .uri(gridPointsUrl)
+                    .retrieve()
+                    .bodyToMono(JsonNode.class)
+                    .block();
 
-            double tempVariation = Math.sin(i * Math.PI / 12) * 5;
-            weather.setTemperature(BigDecimal.valueOf(15.0 + tempVariation));
-            weather.setHumidity(BigDecimal.valueOf(70.0));
-            weather.setWindSpeed(BigDecimal.valueOf(3.0));
-            weather.setWindDirection(BigDecimal.valueOf(180.0));
-            weather.setPressure(BigDecimal.valueOf(101_325.0));
-            weather.setVisibility(BigDecimal.valueOf(10_000.0));
+            String forecastUrl = gridResponse.at("/properties/forecastHourly").asText();
+            if (forecastUrl.isEmpty()) {
+                System.err.println("Hourly forecast URL not found.");
+                return List.of();
+            }
 
-            forecast.add(weather);
+            // Step 2: Get hourly forecast from the grid URL
+            JsonNode forecastResponse = webClient.get()
+                    .uri(forecastUrl)
+                    .retrieve()
+                    .bodyToMono(JsonNode.class)
+                    .block();
+
+            JsonNode periods = forecastResponse.at("/properties/periods");
+            if (periods.isArray()) {
+                for (JsonNode period : periods) {
+                    WeatherData weather = new WeatherData();
+                    weather.setLatitude(BigDecimal.valueOf(latitude));
+                    weather.setLongitude(BigDecimal.valueOf(longitude));
+                    weather.setTemperature(BigDecimal.valueOf(period.get("temperature").asDouble()));
+                    weather.setHumidity(BigDecimal.valueOf(period.at("/relativeHumidity/value").asDouble()));
+                    weather.setWindSpeed(BigDecimal.valueOf(period.get("windSpeed").asDouble()));
+                    weather.setWindDirection(BigDecimal.valueOf(period.get("windDirection").asDouble()));
+                    weather.setWeatherCondition(period.get("shortForecast").asText());
+                    weather.setTimestamp(ZonedDateTime.parse(period.get("startTime").asText()).toLocalDateTime());
+
+                    forecastList.add(weather);
+                    if (forecastList.size() >= hoursAhead) {
+                        break;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error fetching weather forecast: " + e.getMessage());
+            // Return an empty list or default data instead of throwing
+            return List.of();
         }
-        return forecast;
-    }
-
-    private WeatherData getDefaultWeatherData(double latitude, double longitude) {
-        WeatherData weather = new WeatherData();
-        weather.setLatitude(BigDecimal.valueOf(latitude));
-        weather.setLongitude(BigDecimal.valueOf(longitude));
-        weather.setTimestamp(LocalDateTime.now());
-        weather.setTemperature(BigDecimal.valueOf(15.0));
-        weather.setHumidity(BigDecimal.valueOf(70.0));
-        weather.setWindSpeed(BigDecimal.valueOf(3.0));
-        weather.setWindDirection(BigDecimal.valueOf(180.0));
-        weather.setPressure(BigDecimal.valueOf(101_325.0));
-        weather.setVisibility(BigDecimal.valueOf(10_000.0));
-        return weather;
+        return forecastList;
     }
 }

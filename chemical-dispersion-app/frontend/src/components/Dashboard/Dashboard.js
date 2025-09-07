@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { apiService } from '../../services/api';
+import './Dashboard.css';
 
 function Dashboard({ spills, onSpillSelect, onCreate }) {
+  const navigate = useNavigate();
   const [stats, setStats] = useState({
     totalSpills: 0,
     activeSpills: 0,
@@ -9,6 +12,7 @@ function Dashboard({ spills, onSpillSelect, onCreate }) {
     criticalSpills: 0
   });
   const [recentActivity, setRecentActivity] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     calculateStats();
@@ -17,9 +21,11 @@ function Dashboard({ spills, onSpillSelect, onCreate }) {
   const calculateStats = () => {
     const activeSpills = spills.filter(spill => spill.status === 'ACTIVE');
     const criticalSpills = spills.filter(spill => 
-      spill.volume > 10000 || spill.chemicalType.toLowerCase().includes('toxic')
+      spill.volume > 10000 || spill.chemicalType.toLowerCase().includes('toxic') || 
+      spill.chemicalType.toLowerCase().includes('hazard') ||
+      spill.priority === 'HIGH' || spill.priority === 'CRITICAL'
     );
-    const totalVolume = spills.reduce((sum, spill) => sum + spill.volume, 0);
+    const totalVolume = spills.reduce((sum, spill) => sum + (spill.volume || 0), 0);
 
     setStats({
       totalSpills: spills.length,
@@ -31,33 +37,155 @@ function Dashboard({ spills, onSpillSelect, onCreate }) {
     // Create recent activity log
     const activity = spills
       .sort((a, b) => new Date(b.spillTime) - new Date(a.spillTime))
-      .slice(0, 5)
+      .slice(0, 8)
       .map(spill => ({
         id: spill.id,
-        message: `${spill.name} reported - ${spill.chemicalType} (${spill.volume}L)`,
+        message: `${spill.name || 'Unnamed Incident'} - ${spill.chemicalType} (${(spill.volume || 0).toLocaleString()}L)`,
         time: spill.spillTime,
-        type: spill.status
+        type: spill.status,
+        spill: spill
       }));
     
     setRecentActivity(activity);
   };
 
-  const handleCreateSampleSpill = async () => {
+  const handleReportIncident = () => {
+    navigate('/spill');
+  };
+
+  const handleGenerateReport = async () => {
+    setLoading(true);
     try {
-      const sampleSpill = {
-        name: `Incident-${Date.now()}`,
-        chemicalType: 'Crude Oil',
-        volume: Math.floor(Math.random() * 5000) + 1000,
-        latitude: 29.7604 + (Math.random() - 0.5) * 0.1,
-        longitude: -95.3698 + (Math.random() - 0.5) * 0.1,
-        spillTime: new Date().toISOString(),
-        waterDepth: Math.floor(Math.random() * 50) + 10
+      // Generate comprehensive report
+      const reportData = {
+        timestamp: new Date().toISOString(),
+        totalIncidents: stats.totalSpills,
+        activeIncidents: stats.activeSpills,
+        criticalIncidents: stats.criticalSpills,
+        totalVolume: stats.totalVolume,
+        incidents: spills.map(spill => ({
+          id: spill.id,
+          name: spill.name,
+          chemical: spill.chemicalType,
+          volume: spill.volume,
+          location: `${parseFloat(spill.latitude).toFixed(4)}, ${parseFloat(spill.longitude).toFixed(4)}`,
+          status: spill.status,
+          reportTime: spill.spillTime,
+          priority: spill.priority || 'MEDIUM'
+        }))
       };
-      
-      const created = await apiService.createSpill(sampleSpill);
-      onCreate(created);
+
+      // Create downloadable report
+      const reportContent = generateReportContent(reportData);
+      const blob = new Blob([reportContent], { type: 'text/plain' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `spill-report-${new Date().toISOString().split('T')[0]}.txt`;
+      a.click();
+      window.URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Error creating sample spill:', error);
+      console.error('Error generating report:', error);
+      alert('Failed to generate report');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const generateReportContent = (data) => {
+    return `
+CHEMICAL SPILL INCIDENT REPORT
+Generated: ${new Date(data.timestamp).toLocaleString()}
+=====================================
+
+SUMMARY STATISTICS
+------------------
+Total Incidents: ${data.totalIncidents}
+Active Incidents: ${data.activeIncidents}
+Critical Level Incidents: ${data.criticalIncidents}
+Total Volume Spilled: ${data.totalVolume.toLocaleString()} Liters
+
+INCIDENT DETAILS
+----------------
+${data.incidents.map((incident, index) => `
+${index + 1}. ${incident.name || 'Unnamed Incident'}
+   Chemical: ${incident.chemical}
+   Volume: ${(incident.volume || 0).toLocaleString()} L
+   Location: ${incident.location}
+   Status: ${incident.status}
+   Priority: ${incident.priority}
+   Reported: ${new Date(incident.reportTime).toLocaleString()}
+`).join('\n')}
+
+RECOMMENDATIONS
+---------------
+${data.criticalIncidents > 0 ? `⚠️  URGENT: ${data.criticalIncidents} critical incidents require immediate attention` : '✅ No critical incidents at this time'}
+${data.activeIncidents > 5 ? `⚠️  High incident volume: ${data.activeIncidents} active incidents` : ''}
+${data.totalVolume > 50000 ? `⚠️  Large total volume: ${data.totalVolume.toLocaleString()} L total spillage` : ''}
+
+Report generated by Water Dispersion Monitor System
+    `.trim();
+  };
+
+  const handleViewAllOnMap = () => {
+    navigate('/map');
+  };
+
+  const handleMarkAsContained = async (spillId) => {
+    if (!spillId) return;
+    
+    try {
+      setLoading(true);
+      await apiService.updateSpillStatus(spillId, 'CONTAINED');
+      // Refresh data
+      window.location.reload();
+    } catch (error) {
+      console.error('Error updating spill status:', error);
+      alert('Failed to update spill status');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEmergencyAlert = () => {
+    const criticalSpills = spills.filter(spill => 
+      spill.volume > 10000 || spill.chemicalType.toLowerCase().includes('toxic')
+    );
+    
+    if (criticalSpills.length === 0) {
+      alert('No critical incidents requiring emergency alert at this time.');
+      return;
+    }
+
+    const alertMessage = `🚨 EMERGENCY ALERT 🚨\n\n${criticalSpills.length} critical incident(s) detected:\n\n${
+      criticalSpills.map(spill => 
+        `• ${spill.name}: ${spill.chemicalType} (${spill.volume.toLocaleString()}L)\n  Location: ${parseFloat(spill.latitude).toFixed(4)}, ${parseFloat(spill.longitude).toFixed(4)}`
+      ).join('\n\n')
+    }\n\nImmediate response required!`;
+    
+    alert(alertMessage);
+  };
+
+  const handleStatClick = (statType) => {
+    switch (statType) {
+      case 'total':
+        // Show all incidents
+        navigate('/dashboard');
+        break;
+      case 'active':
+        // Filter to show only active
+        navigate('/map', { state: { filter: 'active' } });
+        break;
+      case 'volume':
+        // Show volume analysis
+        navigate('/weather');
+        break;
+      case 'critical':
+        // Show critical incidents
+        navigate('/map', { state: { filter: 'critical' } });
+        break;
+      default:
+        break;
     }
   };
 
@@ -66,127 +194,193 @@ function Dashboard({ spills, onSpillSelect, onCreate }) {
       case 'ACTIVE': return '#dc2626';
       case 'CONTAINED': return '#d97706';
       case 'CLEANED': return '#059669';
+      case 'ARCHIVED': return '#6b7280';
+      default: return '#6b7280';
+    }
+  };
+
+  const getPriorityColor = (priority) => {
+    switch (priority) {
+      case 'CRITICAL': return '#dc2626';
+      case 'HIGH': return '#ea580c';
+      case 'MEDIUM': return '#d97706';
+      case 'LOW': return '#65a30d';
       default: return '#6b7280';
     }
   };
 
   return (
-    <div style={{ padding: '2rem' }}>
+    <div className="dashboard-container">
       {/* Header */}
-      <div style={{ marginBottom: '2rem' }}>
-        <h1 style={{ margin: '0 0 0.5rem 0', fontSize: '2rem', color: '#1e293b' }}>
-          Emergency Response Dashboard
-        </h1>
-        <p style={{ margin: 0, color: '#64748b' }}>
-          Real-time monitoring of chemical spills and dispersion modeling
-        </p>
+      <div className="dashboard-header">
+        <div className="header-content">
+          <h1>Emergency Response Dashboard</h1>
+          <p>Real-time monitoring of chemical spills and dispersion modeling</p>
+        </div>
+        <div className="header-actions">
+          <button 
+            className="btn btn-primary btn-lg"
+            onClick={handleReportIncident}
+          >
+            🚨 Report New Incident
+          </button>
+        </div>
       </div>
 
       {/* Statistics Grid */}
-      <div className="grid grid-cols-4" style={{ marginBottom: '2rem' }}>
-        <div className="card">
-          <div className="card-content">
-            <h3 style={{ margin: '0 0 0.5rem 0', color: '#1976d2', fontSize: '2rem' }}>
-              {stats.totalSpills}
-            </h3>
-            <p style={{ margin: 0, color: '#666' }}>Total Incidents</p>
+      <div className="stats-grid">
+        <div 
+          className="stat-card clickable"
+          onClick={() => handleStatClick('total')}
+        >
+          <div className="stat-icon">📊</div>
+          <div className="stat-content">
+            <h3>{stats.totalSpills}</h3>
+            <p>Total Incidents</p>
           </div>
         </div>
 
-        <div className="card">
-          <div className="card-content">
-            <h3 style={{ margin: '0 0 0.5rem 0', color: '#dc2626', fontSize: '2rem' }}>
-              {stats.activeSpills}
-            </h3>
-            <p style={{ margin: 0, color: '#666' }}>Active Spills</p>
+        <div 
+          className="stat-card clickable critical"
+          onClick={() => handleStatClick('active')}
+        >
+          <div className="stat-icon">🔥</div>
+          <div className="stat-content">
+            <h3>{stats.activeSpills}</h3>
+            <p>Active Spills</p>
           </div>
         </div>
 
-        <div className="card">
-          <div className="card-content">
-            <h3 style={{ margin: '0 0 0.5rem 0', color: '#d97706', fontSize: '2rem' }}>
-              {stats.totalVolume.toLocaleString()}L
-            </h3>
-            <p style={{ margin: 0, color: '#666' }}>Total Volume</p>
+        <div 
+          className="stat-card clickable warning"
+          onClick={() => handleStatClick('volume')}
+        >
+          <div className="stat-icon">💧</div>
+          <div className="stat-content">
+            <h3>{stats.totalVolume.toLocaleString()}L</h3>
+            <p>Total Volume</p>
           </div>
         </div>
 
-        <div className="card">
-          <div className="card-content">
-            <h3 style={{ margin: '0 0 0.5rem 0', color: '#7c3aed', fontSize: '2rem' }}>
-              {stats.criticalSpills}
-            </h3>
-            <p style={{ margin: 0, color: '#666' }}>Critical Level</p>
+        <div 
+          className="stat-card clickable danger"
+          onClick={() => handleStatClick('critical')}
+        >
+          <div className="stat-icon">⚠️</div>
+          <div className="stat-content">
+            <h3>{stats.criticalSpills}</h3>
+            <p>Critical Level</p>
           </div>
         </div>
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-2" style={{ gap: '2rem' }}>
+      <div className="main-grid">
         {/* Active Spills */}
-        <div className="card">
+        <div className="content-card">
           <div className="card-header">
-            <h2 className="card-title">Active Incidents</h2>
+            <h2>Active Incidents ({spills.length})</h2>
+            <button 
+              className="btn btn-secondary btn-sm"
+              onClick={handleViewAllOnMap}
+            >
+              View on Map
+            </button>
           </div>
           <div className="card-content">
             {spills.length > 0 ? (
-              <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
-                {spills.map(spill => (
+              <div className="spills-list">
+                {spills.slice(0, 6).map(spill => (
                   <div 
                     key={spill.id}
-                    style={{
-                      padding: '1rem',
-                      border: '1px solid #e2e8f0',
-                      borderRadius: '8px',
-                      marginBottom: '0.5rem',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease'
-                    }}
+                    className="spill-item"
                     onClick={() => onSpillSelect(spill)}
-                    onMouseEnter={(e) => {
-                      e.target.style.backgroundColor = '#f8fafc';
-                      e.target.style.borderColor = '#1976d2';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.backgroundColor = 'white';
-                      e.target.style.borderColor = '#e2e8f0';
-                    }}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                      <h4 style={{ margin: 0, fontSize: '1rem' }}>{spill.name}</h4>
-                      <span 
-                        style={{
-                          backgroundColor: getStatusColor(spill.status),
-                          color: 'white',
-                          padding: '0.25rem 0.5rem',
-                          borderRadius: '4px',
-                          fontSize: '0.75rem',
-                          fontWeight: '500'
+                    <div className="spill-header">
+                      <h4>{spill.name || 'Unnamed Incident'}</h4>
+                      <div className="spill-badges">
+                        <span 
+                          className="status-badge"
+                          style={{ backgroundColor: getStatusColor(spill.status) }}
+                        >
+                          {spill.status}
+                        </span>
+                        {spill.priority && (
+                          <span 
+                            className="priority-badge"
+                            style={{ backgroundColor: getPriorityColor(spill.priority) }}
+                          >
+                            {spill.priority}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="spill-details">
+                      <div className="detail-row">
+                        <span className="detail-label">Chemical:</span>
+                        <span className="detail-value">{spill.chemicalType}</span>
+                      </div>
+                      <div className="detail-row">
+                        <span className="detail-label">Volume:</span>
+                        <span className="detail-value">{(spill.volume || 0).toLocaleString()} L</span>
+                      </div>
+                      <div className="detail-row">
+                        <span className="detail-label">Location:</span>
+                        <span className="detail-value">
+                          {parseFloat(spill.latitude).toFixed(4)}, {parseFloat(spill.longitude).toFixed(4)}
+                        </span>
+                      </div>
+                      <div className="detail-row">
+                        <span className="detail-label">Time:</span>
+                        <span className="detail-value">{new Date(spill.spillTime).toLocaleString()}</span>
+                      </div>
+                    </div>
+                    <div className="spill-actions">
+                      {spill.status === 'ACTIVE' && (
+                        <button 
+                          className="btn btn-success btn-sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleMarkAsContained(spill.id);
+                          }}
+                        >
+                          Mark Contained
+                        </button>
+                      )}
+                      <button 
+                        className="btn btn-primary btn-sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSpillSelect(spill);
+                          navigate('/map');
                         }}
                       >
-                        {spill.status}
-                      </span>
+                        View Details
+                      </button>
                     </div>
-                    <p style={{ margin: '0.25rem 0', fontSize: '0.875rem', color: '#4b5563' }}>
-                      <strong>Chemical:</strong> {spill.chemicalType}
-                    </p>
-                    <p style={{ margin: '0.25rem 0', fontSize: '0.875rem', color: '#4b5563' }}>
-                      <strong>Volume:</strong> {spill.volume.toLocaleString()} L
-                    </p>
-                    <p style={{ margin: '0.25rem 0', fontSize: '0.875rem', color: '#4b5563' }}>
-                      <strong>Location:</strong> {parseFloat(spill.latitude).toFixed(4)}, {parseFloat(spill.longitude).toFixed(4)}
-                    </p>
-                    <p style={{ margin: '0.25rem 0', fontSize: '0.875rem', color: '#4b5563' }}>
-                      <strong>Time:</strong> {new Date(spill.spillTime).toLocaleString()}
-                    </p>
                   </div>
                 ))}
+                {spills.length > 6 && (
+                  <div className="view-more">
+                    <button 
+                      className="btn btn-outline"
+                      onClick={handleViewAllOnMap}
+                    >
+                      View All {spills.length} Incidents
+                    </button>
+                  </div>
+                )}
               </div>
             ) : (
-              <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
-                <p style={{ margin: '0 0 1rem 0' }}>No active incidents</p>
-                <button className="btn btn-primary" onClick={handleCreateSampleSpill}>
-                  Create Sample Incident
+              <div className="empty-state">
+                <div className="empty-icon">📍</div>
+                <p>No active incidents</p>
+                <small>Click "Report New Incident" to begin</small>
+                <button 
+                  className="btn btn-primary"
+                  onClick={handleReportIncident}
+                >
+                  Report First Incident
                 </button>
               </div>
             )}
@@ -194,35 +388,36 @@ function Dashboard({ spills, onSpillSelect, onCreate }) {
         </div>
 
         {/* Recent Activity */}
-        <div className="card">
+        <div className="content-card">
           <div className="card-header">
-            <h2 className="card-title">Recent Activity</h2>
+            <h2>Recent Activity</h2>
           </div>
           <div className="card-content">
             {recentActivity.length > 0 ? (
-              <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+              <div className="activity-list">
                 {recentActivity.map((activity, index) => (
                   <div 
-                    key={activity.id}
-                    style={{
-                      padding: '1rem',
-                      borderLeft: `4px solid ${getStatusColor(activity.type)}`,
-                      backgroundColor: '#f8fafc',
-                      marginBottom: '0.5rem',
-                      borderRadius: '0 8px 8px 0'
-                    }}
+                    key={`${activity.id}-${index}`}
+                    className="activity-item"
+                    style={{ borderLeftColor: getStatusColor(activity.type) }}
+                    onClick={() => onSpillSelect(activity.spill)}
                   >
-                    <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.875rem', color: '#1e293b' }}>
-                      {activity.message}
-                    </p>
-                    <p style={{ margin: 0, fontSize: '0.75rem', color: '#64748b' }}>
-                      {new Date(activity.time).toLocaleString()}
-                    </p>
+                    <div className="activity-content">
+                      <p className="activity-message">{activity.message}</p>
+                      <p className="activity-time">{new Date(activity.time).toLocaleString()}</p>
+                    </div>
+                    <div className="activity-status">
+                      <span 
+                        className="status-dot"
+                        style={{ backgroundColor: getStatusColor(activity.type) }}
+                      ></span>
+                    </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
+              <div className="empty-state">
+                <div className="empty-icon">📝</div>
                 <p>No recent activity</p>
               </div>
             )}
@@ -231,35 +426,100 @@ function Dashboard({ spills, onSpillSelect, onCreate }) {
       </div>
 
       {/* Quick Actions */}
-      <div style={{ marginTop: '2rem' }}>
-        <div className="card">
+      <div className="quick-actions-section">
+        <div className="content-card">
           <div className="card-header">
-            <h2 className="card-title">Quick Actions</h2>
+            <h2>Quick Actions</h2>
           </div>
           <div className="card-content">
-            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-              <button className="btn btn-primary" onClick={handleCreateSampleSpill}>
-                🚨 Report New Incident
+            <div className="actions-grid">
+              <button 
+                className="action-btn primary"
+                onClick={handleReportIncident}
+                disabled={loading}
+              >
+                <div className="action-icon">🚨</div>
+                <div className="action-content">
+                  <h4>Report Incident</h4>
+                  <p>Report new chemical spill</p>
+                </div>
               </button>
-              <button className="btn btn-secondary">
-                📊 Generate Report
+
+              <button 
+                className="action-btn secondary"
+                onClick={handleGenerateReport}
+                disabled={loading}
+              >
+                <div className="action-icon">📊</div>
+                <div className="action-content">
+                  <h4>Generate Report</h4>
+                  <p>Download incident summary</p>
+                </div>
               </button>
-              <button className="btn btn-secondary">
-                🗺️ View All on Map
+
+              <button 
+                className="action-btn secondary"
+                onClick={handleViewAllOnMap}
+              >
+                <div className="action-icon">🗺️</div>
+                <div className="action-content">
+                  <h4>View on Map</h4>
+                  <p>Interactive map view</p>
+                </div>
               </button>
-              <button className="btn btn-secondary">
-                ⚙️ System Settings
+
+              <button 
+                className="action-btn success"
+                onClick={() => {
+                  const activeSpills = spills.filter(s => s.status === 'ACTIVE');
+                  if (activeSpills.length > 0) {
+                    handleMarkAsContained(activeSpills[0].id);
+                  } else {
+                    alert('No active spills to mark as contained');
+                  }
+                }}
+                disabled={loading || stats.activeSpills === 0}
+              >
+                <div className="action-icon">✅</div>
+                <div className="action-content">
+                  <h4>Mark Contained</h4>
+                  <p>Update spill status</p>
+                </div>
               </button>
-              <button className="btn btn-success">
-                ✅ Mark as Contained
+
+              <button 
+                className="action-btn warning"
+                onClick={() => navigate('/weather')}
+              >
+                <div className="action-icon">🌦️</div>
+                <div className="action-content">
+                  <h4>Weather Data</h4>
+                  <p>Current conditions</p>
+                </div>
               </button>
-              <button className="btn btn-danger">
-                🚨 Emergency Alert
+
+              <button 
+                className="action-btn danger"
+                onClick={handleEmergencyAlert}
+                disabled={stats.criticalSpills === 0}
+              >
+                <div className="action-icon">🚨</div>
+                <div className="action-content">
+                  <h4>Emergency Alert</h4>
+                  <p>Send critical notification</p>
+                </div>
               </button>
             </div>
           </div>
         </div>
       </div>
+
+      {loading && (
+        <div className="loading-overlay">
+          <div className="loading-spinner"></div>
+          <p>Processing...</p>
+        </div>
+      )}
     </div>
   );
 }

@@ -3,93 +3,126 @@ package com.dispersion.service;
 import com.dispersion.model.Spill;
 import com.dispersion.model.WeatherData;
 import com.dispersion.model.TideData;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class FluidDynamicsService {
 
-    public double concentrationAt(double sourceStrength,
-            double currentU,
-            double diffY,
-            double depth,
-            double x,
-            double y) {
-        if (currentU <= 0 || depth <= 0 || diffY <= 0) {
-            return 0.0;
-        }
+    private final WebClient webClient;
+    private final ObjectMapper objectMapper;
 
-        // Avoid division by zero for x <= 0
-        if (x <= 0) {
-            return 0.0;
-        }
-
-        double sigmaY = Math.sqrt(2.0 * diffY * x / currentU);
-        double norm = sourceStrength / (Math.sqrt(2.0 * Math.PI) * sigmaY * currentU * depth);
-        double gy = Math.exp(-(y * y) / (2.0 * sigmaY * sigmaY));
-        return norm * gy;
-    }
-
-    public List<Point> centerlinePlume(double sourceStrength,
-            double currentU,
-            double diffY,
-            double depth,
-            double dx,
-            int steps) {
-        List<Point> out = new ArrayList<>(steps);
-        double x = Math.max(dx, 1e-6);
-        for (int i = 0; i < steps; i++, x += dx) {
-            double c = concentrationAt(sourceStrength, currentU, diffY, depth, x, 0.0);
-            out.add(new Point(x, c));
-        }
-        return out;
+    @Autowired
+    public FluidDynamicsService(WebClient.Builder webClientBuilder, ObjectMapper objectMapper) {
+        this.webClient = webClientBuilder.baseUrl("https://pubchem.ncbi.nlm.nih.gov/rest/pug").build();
+        this.objectMapper = objectMapper;
     }
 
     public DispersionResult calculateDispersion(Spill spill, WeatherData weather, List<TideData> tides) {
-        // Simple implementation - could be enhanced with more sophisticated physics
-        double sourceStrength = spill.getVolume().doubleValue();
-        double currentU = weather.getWindSpeed().doubleValue() * 0.05; // Simplified conversion
-        double diffY = 1.0; // Turbulent diffusion coefficient
-        double depth = spill.getWaterDepth().doubleValue();
+        System.out.println("Calculating dispersion for spill: " + spill.getName());
+        System.out.println("Weather data: " + weather.getTemperature() + "C, " + weather.getWindSpeed() + "m/s");
+        System.out.println("Tide data points: " + tides.size());
 
-        int gridSize = 100;
-        double cellSize = 100.0; // meters
+        // Get chemical properties from PubChem
+        Optional<ChemicalProperties> properties = getChemicalProperties(spill.getChemicalType());
 
-        DispersionGrid grid = new DispersionGrid(
+        if (properties.isEmpty()) {
+            System.err
+                    .println("Could not get chemical properties for " + spill.getChemicalType() + ". Using defaults.");
+            // Use default values if API call fails
+            // This prevents the application from breaking when a chemical is not found.
+        }
+
+        // Mock calculation for demonstration
+        DispersionGrid dispersionGrid = new DispersionGrid(
                 spill.getLatitude().doubleValue(),
                 spill.getLongitude().doubleValue(),
-                cellSize,
-                gridSize);
+                100,
+                100);
 
-        double centerX = grid.getGridSize() / 2.0;
-        double centerY = grid.getGridSize() / 2.0;
+        // Simple diffusion model
+        double initialConcentration = spill.getVolume().doubleValue() / 1000.0;
+        double windEffectX = weather.getWindSpeed().doubleValue()
+                * Math.cos(Math.toRadians(weather.getWindDirection().doubleValue()));
+        double windEffectY = weather.getWindSpeed().doubleValue()
+                * Math.sin(Math.toRadians(weather.getWindDirection().doubleValue()));
 
-        for (int i = 0; i < gridSize; i++) {
-            for (int j = 0; j < gridSize; j++) {
-                double x = (i - centerX) * cellSize;
-                double y = (j - centerY) * cellSize;
-
-                // Use absolute x value for concentration calculation
-                double concentration = concentrationAt(sourceStrength, currentU, diffY, depth, Math.abs(x), y);
-                grid.setConcentration(i, j, concentration);
+        for (int i = 0; i < 100; i++) {
+            for (int j = 0; j < 100; j++) {
+                double distanceSq = Math.pow(i - 50 - windEffectX, 2) + Math.pow(j - 50 - windEffectY, 2);
+                double concentration = initialConcentration * Math.exp(-distanceSq / (2 * 50 * 50));
+                dispersionGrid.setConcentration(i, j, concentration);
             }
         }
 
         DispersionResult result = new DispersionResult();
-        result.setDispersionGrid(grid);
+        result.setDispersionGrid(dispersionGrid);
         return result;
     }
 
-    public static class Point {
-        public final double x;
-        public final double y;
+    public Optional<ChemicalProperties> getChemicalProperties(String chemicalName) {
+        try {
+            String url = String.format("/compound/name/%s/JSON", chemicalName);
+            JsonNode root = webClient.get()
+                    .uri(url)
+                    .retrieve()
+                    .bodyToMono(JsonNode.class)
+                    .block();
 
-        public Point(double x, double y) {
-            this.x = x;
-            this.y = y;
+            // Assuming we get a single compound result, parse the CID
+            JsonNode compound = root.at("/PC_Compounds/0");
+            if (compound.isMissingNode()) {
+                System.out.println("No compound found for: " + chemicalName);
+                return Optional.empty();
+            }
+
+            JsonNode cidNode = compound.at("/CID");
+            if (cidNode.isMissingNode()) {
+                System.out.println("No CID found for compound: " + chemicalName);
+                return Optional.empty();
+            }
+
+            System.out.println("Found CID for " + chemicalName + ": " + cidNode.asLong());
+
+            ChemicalProperties props = new ChemicalProperties();
+            props.setName(chemicalName);
+            props.setPubChemCid(cidNode.asLong());
+
+            return Optional.of(props);
+
+        } catch (Exception e) {
+            System.err.println("Error fetching chemical properties for " + chemicalName + ": " + e.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    public static class ChemicalProperties {
+        private String name;
+        private long pubChemCid;
+        // Add more properties as needed
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public long getPubChemCid() {
+            return pubChemCid;
+        }
+
+        public void setPubChemCid(long pubChemCid) {
+            this.pubChemCid = pubChemCid;
         }
     }
 

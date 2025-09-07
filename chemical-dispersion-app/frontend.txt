@@ -1,12 +1,9 @@
-PS C:\water\chemical-dispersion-app\frontend\src> tree /F
-Folder PATH listing
-Volume serial number is EE31-E1B4
 C:.
 │   App.css
 │   App.js
 │   index.css
 │   index.js
-│
+│   
 ├───components
 │   ├───BaseMap
 │   │       BaseMap.js
@@ -20,6 +17,7 @@ C:.
 │   ├───Map
 │   │       DispersionMap.css
 │   │       DispersionMap.js
+│   │       InteractiveMap.js
 │   │       MapControls.js
 │   │
 │   ├───SlidingPanel
@@ -33,6 +31,9 @@ C:.
 │   │
 │   └───Weather
 │           WeatherPanel.js
+│
+├───resources
+│       application.properties
 │
 ├───services
 │       api.js

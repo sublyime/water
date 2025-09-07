@@ -9,13 +9,17 @@ import com.dispersion.repository.SpillRepository;
 import com.dispersion.service.FluidDynamicsService.DispersionGrid;
 import com.dispersion.service.FluidDynamicsService.DispersionResult;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 @Service
 public class DispersionService {
@@ -32,6 +36,34 @@ public class DispersionService {
     @Autowired
     private FluidDynamicsService fluidDynamicsService;
 
+    // List to hold connected clients for real-time updates
+    private final List<SseEmitter> clients = new CopyOnWriteArrayList<>();
+
+    // Method to add a new client (SseEmitter)
+    public void addClient(SseEmitter emitter) {
+        clients.add(emitter);
+        emitter.onCompletion(() -> clients.remove(emitter));
+        emitter.onTimeout(() -> clients.remove(emitter));
+        System.out.println("New SSE client added. Total clients: " + clients.size());
+    }
+
+    // Scheduled method to send updates to all clients every 10 seconds
+    @Scheduled(fixedRate = 10000)
+    public void sendRealTimeUpdates() {
+        System.out.println("Attempting to send real-time updates...");
+        List<Spill> activeSpills = getActiveSpills(); // Use existing method to get data
+        for (SseEmitter client : clients) {
+            try {
+                client.send(SseEmitter.event().data(activeSpills));
+                System.out.println("Update sent to a client.");
+            } catch (IOException e) {
+                System.err.println("Failed to send update to client: " + e.getMessage());
+                // Client likely disconnected, will be removed by onCompletion/onTimeout
+            }
+        }
+    }
+
+    // Existing methods from your previous code
     public Spill createSpill(SpillRequest request) {
         Spill spill = new Spill();
         spill.setName(request.getName());
@@ -64,7 +96,6 @@ public class DispersionService {
         response.setCalculationTime(LocalDateTime.now());
         response.setDispersionGrid(result.getDispersionGrid());
         response.setAffectedAreaKm2(BigDecimal.valueOf(calculateAffectedArea(result.getDispersionGrid())));
-
         return response;
     }
 
@@ -78,29 +109,10 @@ public class DispersionService {
                 }
             }
         }
-        double cellAreaM2 = grid.getCellSize() * grid.getCellSize();
-        double totalAreaM2 = affectedCells * cellAreaM2;
-        return totalAreaM2 / 1_000_000.0;
-    }
-
-    private double findMaxConcentration(DispersionGrid grid) {
-        double maxConcentration = 0.0;
-        for (int i = 0; i < grid.getGridSize(); i++) {
-            for (int j = 0; j < grid.getGridSize(); j++) {
-                double concentration = grid.getConcentration(i, j);
-                if (concentration > maxConcentration) {
-                    maxConcentration = concentration;
-                }
-            }
-        }
-        return maxConcentration;
+        return affectedCells * (grid.getCellSize() / 1000.0) * (grid.getCellSize() / 1000.0);
     }
 
     public List<DispersionResponse> getCalculationHistory(UUID spillId) {
-        // Implementation would retrieve calculation history from database
-        // For now, returning empty list - would need to create a calculation history
-        // table
-        // and store each dispersion calculation result
         return new ArrayList<>();
     }
 
@@ -127,9 +139,8 @@ public class DispersionService {
         return spillRepository.findByStatus(Spill.SpillStatus.ACTIVE);
     }
 
-    public List<Spill> getRecentSpills(int hoursBack) {
-        LocalDateTime since = LocalDateTime.now().minusHours(hoursBack);
-        return spillRepository.findActiveSpillsSince(Spill.SpillStatus.ACTIVE, since);
+    public List<Spill> getSpillByIds(List<UUID> ids) {
+        return spillRepository.findAllById(ids);
     }
 
     public Spill getSpillById(UUID spillId) {

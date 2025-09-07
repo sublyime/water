@@ -7,10 +7,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class TideService {
@@ -30,23 +32,45 @@ public class TideService {
     }
 
     public List<TideData> getTideForecast(double latitude, double longitude, int hours) {
+        // This is a placeholder; a real implementation would find the nearest station
+        // and fetch data for it.
+        // For this example, we use a fixed station ID for Houston (8770475)
+        // because the API does not support lat/lon lookups directly.
+        String stationId = "8770475";
+
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime end = now.plusHours(hours);
+
         try {
-            return new ArrayList<>();
+            List<TidePoint> tidePoints = getTidePredictions(stationId, now, end, "MLLW");
+
+            return tidePoints.stream()
+                    .map(tp -> {
+                        TideData td = new TideData();
+                        td.setLatitude(tp.latitude);
+                        td.setLongitude(tp.longitude);
+                        td.setTimestamp(tp.time);
+                        td.setTideHeight(BigDecimal.valueOf(tp.valueMeters));
+                        td.setStationId(stationId);
+                        td.setSource("NOAA");
+                        return td;
+                    })
+                    .collect(Collectors.toList());
         } catch (Exception ex) {
             System.err.println("Error getting tide forecast: " + ex.getMessage());
             return new ArrayList<>();
         }
     }
 
-    public List<TidePoint> getTidePredictions(String stationId,
+    private List<TidePoint> getTidePredictions(String stationId,
             LocalDateTime start,
             LocalDateTime end,
             String datum) {
         try {
             DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyyMMdd HH:mm");
             String url = String.format(
-                    "%s?product=predictions&datum=%s&begin_date=%s&end_date=%s&station=%s&time_zone=gmt&application=%s&format=json",
-                    noaaBaseUrl, datum, fmt.format(start), fmt.format(end), stationId, userAgent);
+                    "%s?product=predictions&datum=%s&units=metric&time_zone=gmt&application=%s&format=json&station=%s&begin_date=%s&end_date=%s",
+                    noaaBaseUrl, datum, userAgent, stationId, start.format(fmt), end.format(fmt));
 
             String response = webClient.get()
                     .uri(url)
@@ -84,6 +108,9 @@ public class TideService {
     public static class TidePoint {
         public final LocalDateTime time;
         public final double valueMeters;
+        // Mock latitude/longitude for a fixed station
+        public final java.math.BigDecimal latitude = new java.math.BigDecimal("29.7604");
+        public final java.math.BigDecimal longitude = new java.math.BigDecimal("-95.3698");
 
         public TidePoint(LocalDateTime time, double valueMeters) {
             this.time = time;

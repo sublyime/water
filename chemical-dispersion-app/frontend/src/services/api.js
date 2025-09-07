@@ -41,89 +41,67 @@ api.interceptors.response.use(
 );
 
 export const apiService = {
+  // Spill Endpoints
   async getAllSpills() {
-    const response = await api.get('/dispersion/spills');
-    return response.data;
+    // This endpoint returns all spills, active or contained.
+    return await api.get('/dispersion/spills/all');
   },
 
-  async getSpillById(id) {
-    const response = await api.get(`/dispersion/spills/${id}`);
-    return response.data;
+  async getActiveSpills() {
+    return await api.get('/dispersion/spills');
   },
 
   async createSpill(spillData) {
-    const response = await api.post('/dispersion/spills', spillData);
-    return response.data;
+    return await api.post('/dispersion/spills', spillData);
   },
 
-  async updateSpillStatus(id, status) {
-    const response = await api.put(`/dispersion/spills/${id}/status`, null, { params: { status } });
-    return response.data;
-  },
-
-  async deleteSpill(id) {
-    await api.delete(`/dispersion/spills/${id}`);
-  },
-
-  async getSpillsInArea(minLat, maxLat, minLon, maxLon) {
-    const response = await api.get('/dispersion/spills/area', { params: { minLat, maxLat, minLon, maxLon } });
-    return response.data;
-  },
-
-  async calculateDispersion(spillId, simulationHours = 24) {
-    const response = await api.post(`/dispersion/spills/${spillId}/calculate`, null, {
-      params: { simulationHours },
-      timeout: 60000
+  async updateSpillStatus(spillId, status) {
+    return await api.put(`/dispersion/spills/${spillId}/status`, null, {
+      params: { status }
     });
-    return response.data;
   },
-
-  async getCalculationHistory(spillId) {
-    const response = await api.get(`/dispersion/spills/${spillId}/calculations`);
-    return response.data;
-  },
-
+  
+  // Weather Endpoints
   async getCurrentWeather(latitude, longitude) {
-    const response = await api.get('/weather/current', { params: { latitude, longitude } });
-    return response.data;
+    return await api.get('/weather/current', {
+      params: { latitude, longitude }
+    });
   },
 
-  async getWeatherForecast(latitude, longitude, hoursAhead = 72) {
-    const response = await api.get('/weather/forecast', { params: { latitude, longitude, hoursAhead } });
-    return response.data;
+  // Tide Endpoints
+  async getTideForecast(latitude, longitude, hours) {
+    return await api.get('/tides/forecast', {
+      params: { latitude, longitude, hours }
+    });
   },
 
-  async getCurrentTideData(latitude, longitude) {
-    const response = await api.get('/tide/current', { params: { latitude, longitude } });
-    return response.data;
+  // Real-time updates endpoint
+  subscribeToUpdates(onUpdate) {
+    // Correct URL to use relative path without repeating /api
+    const eventSource = new EventSource('/api/real-time-updates');
+    
+    eventSource.onmessage = (event) => {
+      onUpdate(JSON.parse(event.data));
+    };
+
+    eventSource.onerror = (error) => {
+      console.error('EventSource failed:', error);
+      eventSource.close();
+    };
+
+    return () => eventSource.close();
   },
 
-  async getTideForecast(latitude, longitude, hoursAhead = 72) {
-    const response = await api.get('/tide/forecast', { params: { latitude, longitude, hoursAhead } });
-    return response.data;
-  },
-
-  async getAvailableStations() {
-    const response = await api.get('/tide/stations');
-    return response.data;
-  },
-
-  async healthCheck() {
-    const response = await api.get('/health');
-    return response.data;
-  }
-};
-
-export const apiUtils = {
-  async retry(apiCall, maxRetries = 3, delay = 1000) {
-    let attempt = 0;
-    while (attempt < maxRetries) {
+  // Other utility functions (keep these at the end)
+  async retryRequest(requestFunction, maxRetries = 3, delay = 1000) {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        return await apiCall();
+        return await requestFunction();
       } catch (error) {
-        attempt++;
-        if (attempt === maxRetries) throw error;
-        console.log(`🔄 Retrying API call (${attempt}/${maxRetries}) in ${delay}ms...`);
+        if (attempt === maxRetries) {
+          throw error;
+        }
+        console.warn(`Retrying API call (${attempt}/${maxRetries}) in ${delay}ms...`);
         await new Promise(resolve => setTimeout(resolve, delay));
         delay *= 2;
       }
@@ -159,8 +137,6 @@ export const apiUtils = {
     if (spillData.volume && spillData.volume <= 0) errors.push('Volume must be positive');
     if (spillData.latitude && (spillData.latitude < -90 || spillData.latitude > 90)) errors.push('Latitude must be between -90 and 90');
     if (spillData.longitude && (spillData.longitude < -180 || spillData.longitude > 180)) errors.push('Longitude must be between -180 and 180');
-    return { isValid: errors.length === 0, errors };
+    return errors;
   }
 };
-
-export default api;
