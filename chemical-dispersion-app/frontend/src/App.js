@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
 import Dashboard from './components/Dashboard/Dashboard';
 import SpillForm from './components/Forms/SpillForm';
 import WeatherPanel from './components/Weather/WeatherPanel';
@@ -23,7 +23,7 @@ function App() {
       const spills = await apiService.getAllSpills();
       const activeSpillsList = spills.filter(spill => spill.status === 'ACTIVE');
       setActiveSpills(activeSpillsList);
-      
+
       // Check for emergency level spills
       const emergencySpills = activeSpillsList.filter(spill => 
         spill.volume > 10000 || spill.chemicalType.toLowerCase().includes('toxic')
@@ -93,10 +93,10 @@ function App() {
               Water Dispersion Monitor
             </h1>
             <nav className="main-nav">
-              <button className="nav-btn">🏠 Dashboard</button>
-              <button className="nav-btn">🗺️ Map</button>
-              <button className="nav-btn">📊 Reports</button>
-              <button className="nav-btn">⚙️ Settings</button>
+              <Link className="nav-btn" to="/dashboard">🏠 Dashboard</Link>
+              <Link className="nav-btn" to="/map">🗺️ Map</Link>
+              <Link className="nav-btn" to="/weather">📊 Reports</Link>
+              <Link className="nav-btn" to="/settings">⚙️ Settings</Link>
             </nav>
             <div className="header-status">
               <div className="active-spills-indicator">
@@ -111,13 +111,7 @@ function App() {
           <Routes>
             <Route 
               path="/dashboard" 
-              element={
-                <Dashboard 
-                  spills={activeSpills} 
-                  onSpillSelect={handleSpillSelected} 
-                  onCreate={handleSpillCreated} 
-                />
-              } 
+              element={<Dashboard spills={activeSpills} onSpillSelect={handleSpillSelected} onCreate={handleSpillCreated} />} 
             />
             <Route 
               path="/spill" 
@@ -126,28 +120,13 @@ function App() {
             <Route path="/weather" element={<WeatherPanel />} />
             <Route 
               path="/map" 
-              element={
-                <DispersionMap
-                  spills={activeSpills}
-                  selectedSpill={selectedSpill}
-                  onSpillSelect={handleSpillSelected}
-                  calculateDispersion={handleCalculateDispersion}
-                />
-              } 
+              element={<DispersionMap spills={activeSpills} selectedSpill={selectedSpill} onSpillSelect={handleSpillSelected} calculateDispersion={handleCalculateDispersion} />} 
             />
+            <Route path="/settings" element={<div>Settings Page - Coming Soon</div>} />
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </main>
-
-        <div className="floating-actions">
-          <button className="fab primary" title="New Incident">
-            +
-          </button>
-          <button className="fab secondary" title="Help">
-            ?
-          </button>
-        </div>
       </div>
     </Router>
   );

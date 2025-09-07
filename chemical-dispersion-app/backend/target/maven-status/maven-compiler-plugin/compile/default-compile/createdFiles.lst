@@ -20,6 +20,7 @@ com\dispersion\repository\TideRepository.class
 com\dispersion\service\SpillService.class
 com\dispersion\dto\DispersionResponse$PlumeContour.class
 com\dispersion\DispersionApplication.class
+com\dispersion\controller\MapController.class
 com\dispersion\dto\SpillRequest.class
 com\dispersion\dto\DispersionResponse$LatLngPoint.class
 com\dispersion\config\GlobalExceptionHandler.class

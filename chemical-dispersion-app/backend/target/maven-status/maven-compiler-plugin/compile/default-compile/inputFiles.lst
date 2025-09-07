@@ -4,6 +4,7 @@ C:\water\chemical-dispersion-app\backend\src\main\java\com\dispersion\model\Weat
 C:\water\chemical-dispersion-app\backend\src\main\java\com\dispersion\service\DispersionService.java
 C:\water\chemical-dispersion-app\backend\src\main\java\com\dispersion\controller\SpillController.java
 C:\water\chemical-dispersion-app\backend\src\main\java\com\dispersion\service\SpillService.java
+C:\water\chemical-dispersion-app\backend\src\main\java\com\dispersion\controller\MapController.java
 C:\water\chemical-dispersion-app\backend\src\main\java\com\dispersion\repository\SpillRepository.java
 C:\water\chemical-dispersion-app\backend\src\main\java\com\dispersion\config\GlobalExceptionHandler.java
 C:\water\chemical-dispersion-app\backend\src\main\java\com\dispersion\dto\SpillRequest.java
