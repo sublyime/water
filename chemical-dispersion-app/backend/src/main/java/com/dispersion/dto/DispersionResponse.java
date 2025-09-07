@@ -1,23 +1,43 @@
 package com.dispersion.dto;
 
+import com.dispersion.service.FluidDynamicsService.DispersionGrid;
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 public class DispersionResponse {
 
     private UUID spillId;
-    private int simulationHours;
-    private BigDecimal centerLatitude;
-    private BigDecimal centerLongitude;
-    private BigDecimal maxConcentration;
-    private List<ConcentrationPoint> concentrationGrid;
-    private List<PlumeContour> plumeContours;
-    private BigDecimal affectedAreaKm2;
-    private Map<String, Object> metadata;
 
-    // Getters and setters
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime calculationTime;
+
+    private DispersionGrid dispersionGrid;
+
+    private BigDecimal affectedAreaKm2;
+
+    private List<ConcentrationPoint> concentrationPoints;
+
+    private List<PlumeContour> plumeContours;
+
+    private Double maxConcentration;
+
+    private String status;
+
+    // Default constructor
+    public DispersionResponse() {
+    }
+
+    // Constructor with essential fields
+    public DispersionResponse(UUID spillId, LocalDateTime calculationTime) {
+        this.spillId = spillId;
+        this.calculationTime = calculationTime;
+    }
+
+    // Getters and Setters
     public UUID getSpillId() {
         return spillId;
     }
@@ -26,52 +46,20 @@ public class DispersionResponse {
         this.spillId = spillId;
     }
 
-    public int getSimulationHours() {
-        return simulationHours;
+    public LocalDateTime getCalculationTime() {
+        return calculationTime;
     }
 
-    public void setSimulationHours(int simulationHours) {
-        this.simulationHours = simulationHours;
+    public void setCalculationTime(LocalDateTime calculationTime) {
+        this.calculationTime = calculationTime;
     }
 
-    public BigDecimal getCenterLatitude() {
-        return centerLatitude;
+    public DispersionGrid getDispersionGrid() {
+        return dispersionGrid;
     }
 
-    public void setCenterLatitude(BigDecimal centerLatitude) {
-        this.centerLatitude = centerLatitude;
-    }
-
-    public BigDecimal getCenterLongitude() {
-        return centerLongitude;
-    }
-
-    public void setCenterLongitude(BigDecimal centerLongitude) {
-        this.centerLongitude = centerLongitude;
-    }
-
-    public BigDecimal getMaxConcentration() {
-        return maxConcentration;
-    }
-
-    public void setMaxConcentration(BigDecimal maxConcentration) {
-        this.maxConcentration = maxConcentration;
-    }
-
-    public List<ConcentrationPoint> getConcentrationGrid() {
-        return concentrationGrid;
-    }
-
-    public void setConcentrationGrid(List<ConcentrationPoint> concentrationGrid) {
-        this.concentrationGrid = concentrationGrid;
-    }
-
-    public List<PlumeContour> getPlumeContours() {
-        return plumeContours;
-    }
-
-    public void setPlumeContours(List<PlumeContour> plumeContours) {
-        this.plumeContours = plumeContours;
+    public void setDispersionGrid(DispersionGrid dispersionGrid) {
+        this.dispersionGrid = dispersionGrid;
     }
 
     public BigDecimal getAffectedAreaKm2() {
@@ -82,109 +70,144 @@ public class DispersionResponse {
         this.affectedAreaKm2 = affectedAreaKm2;
     }
 
-    public Map<String, Object> getMetadata() {
-        return metadata;
+    public List<ConcentrationPoint> getConcentrationPoints() {
+        return concentrationPoints;
     }
 
-    public void setMetadata(Map<String, Object> metadata) {
-        this.metadata = metadata;
+    public void setConcentrationPoints(List<ConcentrationPoint> concentrationPoints) {
+        this.concentrationPoints = concentrationPoints;
     }
 
-    // Inner classes
+    public List<PlumeContour> getPlumeContours() {
+        return plumeContours;
+    }
+
+    public void setPlumeContours(List<PlumeContour> plumeContours) {
+        this.plumeContours = plumeContours;
+    }
+
+    public Double getMaxConcentration() {
+        return maxConcentration;
+    }
+
+    public void setMaxConcentration(Double maxConcentration) {
+        this.maxConcentration = maxConcentration;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    // Inner classes for additional data structures
     public static class ConcentrationPoint {
-        private BigDecimal latitude;
-        private BigDecimal longitude;
-        private BigDecimal concentration;
+        private double latitude;
+        private double longitude;
+        private double concentration;
 
         public ConcentrationPoint() {
         }
 
-        public ConcentrationPoint(BigDecimal latitude, BigDecimal longitude, BigDecimal concentration) {
+        public ConcentrationPoint(double latitude, double longitude, double concentration) {
             this.latitude = latitude;
             this.longitude = longitude;
             this.concentration = concentration;
         }
 
-        public BigDecimal getLatitude() {
+        public double getLatitude() {
             return latitude;
         }
 
-        public void setLatitude(BigDecimal latitude) {
+        public void setLatitude(double latitude) {
             this.latitude = latitude;
         }
 
-        public BigDecimal getLongitude() {
+        public double getLongitude() {
             return longitude;
         }
 
-        public void setLongitude(BigDecimal longitude) {
+        public void setLongitude(double longitude) {
             this.longitude = longitude;
         }
 
-        public BigDecimal getConcentration() {
+        public double getConcentration() {
             return concentration;
         }
 
-        public void setConcentration(BigDecimal concentration) {
+        public void setConcentration(double concentration) {
             this.concentration = concentration;
-        }
-    }
-
-    public static class LatLngPoint {
-        private BigDecimal latitude;
-        private BigDecimal longitude;
-
-        public LatLngPoint() {
-        }
-
-        public LatLngPoint(BigDecimal latitude, BigDecimal longitude) {
-            this.latitude = latitude;
-            this.longitude = longitude;
-        }
-
-        public BigDecimal getLatitude() {
-            return latitude;
-        }
-
-        public void setLatitude(BigDecimal latitude) {
-            this.latitude = latitude;
-        }
-
-        public BigDecimal getLongitude() {
-            return longitude;
-        }
-
-        public void setLongitude(BigDecimal longitude) {
-            this.longitude = longitude;
         }
     }
 
     public static class PlumeContour {
-        private String concentrationLevel;
-        private List<LatLngPoint> points;
+        private double concentrationLevel;
+        private List<LatLngPoint> contourPoints;
 
         public PlumeContour() {
         }
 
-        public PlumeContour(String concentrationLevel, List<LatLngPoint> points) {
+        public PlumeContour(double concentrationLevel, List<LatLngPoint> contourPoints) {
             this.concentrationLevel = concentrationLevel;
-            this.points = points;
+            this.contourPoints = contourPoints;
         }
 
-        public String getConcentrationLevel() {
+        public double getConcentrationLevel() {
             return concentrationLevel;
         }
 
-        public void setConcentrationLevel(String concentrationLevel) {
+        public void setConcentrationLevel(double concentrationLevel) {
             this.concentrationLevel = concentrationLevel;
         }
 
-        public List<LatLngPoint> getPoints() {
-            return points;
+        public List<LatLngPoint> getContourPoints() {
+            return contourPoints;
         }
 
-        public void setPoints(List<LatLngPoint> points) {
-            this.points = points;
+        public void setContourPoints(List<LatLngPoint> contourPoints) {
+            this.contourPoints = contourPoints;
         }
+    }
+
+    public static class LatLngPoint {
+        private double latitude;
+        private double longitude;
+
+        public LatLngPoint() {
+        }
+
+        public LatLngPoint(double latitude, double longitude) {
+            this.latitude = latitude;
+            this.longitude = longitude;
+        }
+
+        public double getLatitude() {
+            return latitude;
+        }
+
+        public void setLatitude(double latitude) {
+            this.latitude = latitude;
+        }
+
+        public double getLongitude() {
+            return longitude;
+        }
+
+        public void setLongitude(double longitude) {
+            this.longitude = longitude;
+        }
+    }
+
+    @Override
+    public String toString() {
+        return "DispersionResponse{" +
+                "spillId=" + spillId +
+                ", calculationTime=" + calculationTime +
+                ", affectedAreaKm2=" + affectedAreaKm2 +
+                ", maxConcentration=" + maxConcentration +
+                ", status='" + status + '\'' +
+                '}';
     }
 }

@@ -1,7 +1,8 @@
 import axios from 'axios';
 
+// Change baseURL from '/api/v1' to '/api' to match your Spring Boot configuration
 const api = axios.create({
-  baseURL: '/api/v1',
+  baseURL: '/api', // Removed /v1 to match your server.servlet.context-path=/api
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',

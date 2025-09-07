@@ -44,16 +44,9 @@ public class TideService {
             String datum) {
         try {
             DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyyMMdd HH:mm");
-            String beginStr = start.format(fmt);
-            String endStr = end.format(fmt);
-
             String url = String.format(
-                    "%s?product=predictions&application=water-dispersion&begin_date=%s&end_date=%s&datum=%s&station=%s&time_zone=gmt&interval=h&units=metric&format=json",
-                    noaaBaseUrl,
-                    beginStr.replace(" ", "%20"),
-                    endStr.replace(" ", "%20"),
-                    datum,
-                    stationId);
+                    "%s?product=predictions&datum=%s&begin_date=%s&end_date=%s&station=%s&time_zone=gmt&application=%s&format=json",
+                    noaaBaseUrl, datum, fmt.format(start), fmt.format(end), stationId, userAgent);
 
             String response = webClient.get()
                     .uri(url)

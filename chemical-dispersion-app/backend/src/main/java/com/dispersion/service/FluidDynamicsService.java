@@ -1,9 +1,11 @@
 package com.dispersion.service;
 
+import com.dispersion.model.Spill;
 import com.dispersion.model.WeatherData;
 import com.dispersion.model.TideData;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,9 +18,15 @@ public class FluidDynamicsService {
             double depth,
             double x,
             double y) {
-        if (currentU <= 0 || x <= 0 || depth <= 0 || diffY <= 0) {
+        if (currentU <= 0 || depth <= 0 || diffY <= 0) {
             return 0.0;
         }
+
+        // Avoid division by zero for x <= 0
+        if (x <= 0) {
+            return 0.0;
+        }
+
         double sigmaY = Math.sqrt(2.0 * diffY * x / currentU);
         double norm = sourceStrength / (Math.sqrt(2.0 * Math.PI) * sigmaY * currentU * depth);
         double gy = Math.exp(-(y * y) / (2.0 * sigmaY * sigmaY));
@@ -40,86 +48,60 @@ public class FluidDynamicsService {
         return out;
     }
 
-    public DispersionResult calculateDispersion(double latitude, double longitude, double volume,
-            String chemicalType, List<WeatherData> weatherData,
-            List<TideData> tideData, int simulationHours) {
-        DispersionGrid grid = new DispersionGrid(latitude, longitude, 100.0, 50);
+    public DispersionResult calculateDispersion(Spill spill, WeatherData weather, List<TideData> tides) {
+        // Simple implementation - could be enhanced with more sophisticated physics
+        double sourceStrength = spill.getVolume().doubleValue();
+        double currentU = weather.getWindSpeed().doubleValue() * 0.05; // Simplified conversion
+        double diffY = 1.0; // Turbulent diffusion coefficient
+        double depth = spill.getWaterDepth().doubleValue();
 
-        double maxConcentration = 0;
-        double totalMass = 0;
+        int gridSize = 100;
+        double cellSize = 100.0; // meters
 
-        for (int i = 0; i < grid.getGridSize(); i++) {
-            for (int j = 0; j < grid.getGridSize(); j++) {
-                double distance = Math.sqrt(Math.pow(i - grid.getGridSize() / 2.0, 2) +
-                        Math.pow(j - grid.getGridSize() / 2.0, 2));
-                double concentration = volume * Math.exp(-distance / 10.0);
+        DispersionGrid grid = new DispersionGrid(
+                spill.getLatitude().doubleValue(),
+                spill.getLongitude().doubleValue(),
+                cellSize,
+                gridSize);
+
+        double centerX = grid.getGridSize() / 2.0;
+        double centerY = grid.getGridSize() / 2.0;
+
+        for (int i = 0; i < gridSize; i++) {
+            for (int j = 0; j < gridSize; j++) {
+                double x = (i - centerX) * cellSize;
+                double y = (j - centerY) * cellSize;
+
+                // Use absolute x value for concentration calculation
+                double concentration = concentrationAt(sourceStrength, currentU, diffY, depth, Math.abs(x), y);
                 grid.setConcentration(i, j, concentration);
-
-                if (concentration > maxConcentration) {
-                    maxConcentration = concentration;
-                }
-                totalMass += concentration;
             }
         }
 
-        return new DispersionResult(grid, maxConcentration, totalMass);
+        DispersionResult result = new DispersionResult();
+        result.setDispersionGrid(grid);
+        return result;
     }
 
     public static class Point {
         public final double x;
-        public final double c;
+        public final double y;
 
-        public Point(double x, double c) {
+        public Point(double x, double y) {
             this.x = x;
-            this.c = c;
+            this.y = y;
         }
     }
 
     public static class DispersionResult {
-        private DispersionGrid grid;
-        private double maxConcentration;
-        private double totalMass;
-        private Object chemical;
+        private DispersionGrid dispersionGrid;
 
-        public DispersionResult() {
+        public DispersionGrid getDispersionGrid() {
+            return dispersionGrid;
         }
 
-        public DispersionResult(DispersionGrid grid, double maxConcentration, double totalMass) {
-            this.grid = grid;
-            this.maxConcentration = maxConcentration;
-            this.totalMass = totalMass;
-        }
-
-        public DispersionGrid getGrid() {
-            return grid;
-        }
-
-        public void setGrid(DispersionGrid grid) {
-            this.grid = grid;
-        }
-
-        public double getMaxConcentration() {
-            return maxConcentration;
-        }
-
-        public void setMaxConcentration(double maxConcentration) {
-            this.maxConcentration = maxConcentration;
-        }
-
-        public double getTotalMass() {
-            return totalMass;
-        }
-
-        public void setTotalMass(double totalMass) {
-            this.totalMass = totalMass;
-        }
-
-        public Object getChemical() {
-            return chemical;
-        }
-
-        public void setChemical(Object chemical) {
-            this.chemical = chemical;
+        public void setDispersionGrid(DispersionGrid dispersionGrid) {
+            this.dispersionGrid = dispersionGrid;
         }
     }
 
@@ -129,9 +111,6 @@ public class FluidDynamicsService {
         private double cellSize;
         private int gridSize;
         private double[][] concentrations;
-
-        public DispersionGrid() {
-        }
 
         public DispersionGrid(double centerLat, double centerLon, double cellSize, int gridSize) {
             this.centerLat = centerLat;
@@ -174,11 +153,16 @@ public class FluidDynamicsService {
         }
 
         public double getConcentration(int i, int j) {
+            if (i < 0 || i >= gridSize || j < 0 || j >= gridSize) {
+                return 0.0;
+            }
             return concentrations[i][j];
         }
 
         public void setConcentration(int i, int j, double value) {
-            concentrations[i][j] = value;
+            if (i >= 0 && i < gridSize && j >= 0 && j < gridSize) {
+                concentrations[i][j] = value;
+            }
         }
 
         public double[][] getConcentrations() {
