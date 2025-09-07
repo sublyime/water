@@ -327,27 +327,6 @@ For questions about this report, contact the system administrator.
                 </div>
             )}
 
-            {/* Header */}
-            <div className="dashboard-header">
-                <div className="header-content">
-                    <h1>Chemical Dispersion Monitor</h1>
-                    <p>Real-time monitoring of chemical spills and dispersion modeling</p>
-                    <div className="system-status">
-                        <span className={`status-indicator ${systemStatus === 'online' ? 'online' : 'offline'}`}></span>
-                        <span>System {systemStatus}</span>
-                    </div>
-                </div>
-                <div className="header-actions">
-                    <button 
-                        className="btn btn-primary btn-lg" 
-                        onClick={handleReportIncident}
-                        disabled={loading}
-                    >
-                        📝 Report New Incident
-                    </button>
-                </div>
-            </div>
-
             {/* Statistics Grid */}
             <div className="stats-grid">
                 <div 

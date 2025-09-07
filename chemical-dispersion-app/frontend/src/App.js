@@ -15,21 +15,18 @@ function App() {
   const [systemStatus, setSystemStatus] = useState('online');
   const [lastUpdate, setLastUpdate] = useState(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // Load initial data and set up auto-refresh
   useEffect(() => {
     loadActiveSpills();
     
-    // Set up auto-refresh interval
     let refreshInterval;
     if (autoRefresh) {
       refreshInterval = setInterval(() => {
-        loadActiveSpills(false); // Silent refresh
-      }, 60000); // Refresh every minute
+        loadActiveSpills(false);
+      }, 60000);
     }
-
-    // Set up real-time updates subscription
+    
     const unsubscribe = apiService.subscribeToUpdates((updates) => {
       handleRealTimeUpdates(updates);
     });
@@ -40,14 +37,12 @@ function App() {
     };
   }, [autoRefresh]);
 
-  // Handle real-time updates
   const handleRealTimeUpdates = useCallback((updates) => {
     if (updates && updates.length > 0) {
       updates.forEach(update => {
         switch (update.type) {
           case 'spill_created':
             setActiveSpills(prev => [...prev, update.data]);
-            showNotification(`New spill reported: ${update.data.name}`, 'info');
             break;
           case 'spill_updated':
             setActiveSpills(prev => 
@@ -64,13 +59,9 @@ function App() {
                   : spill
               )
             );
-            if (update.newStatus === 'CONTAINED') {
-              showNotification(`Spill ${update.spillId} marked as contained`, 'success');
-            }
             break;
           case 'emergency_alert':
             setEmergencyAlert(update.message);
-            showNotification(update.message, 'error');
             break;
           default:
             break;
@@ -79,12 +70,9 @@ function App() {
     }
   }, []);
 
-  // Load active spills data
   const loadActiveSpills = async (showLoadingState = true) => {
     try {
-      if (showLoadingState) {
-        setLoading(true);
-      }
+      if (showLoadingState) setLoading(true);
       setSystemStatus('loading');
       
       const spills = await apiService.getAllSpills();
@@ -96,43 +84,33 @@ function App() {
       setLastUpdate(new Date());
       setSystemStatus('online');
 
-      // Check for emergency level spills
       checkForEmergencyConditions(activeSpillsList);
       
     } catch (error) {
       console.error('Error loading spills:', error);
       setSystemStatus('error');
-      showNotification('Failed to load spill data. Using offline mode.', 'warning');
-      
-      // Try to use cached data or show empty state
-      if (activeSpills.length === 0) {
-        // Load demo data for development
-        const demoSpills = [
-          {
-            id: 'demo-1',
-            name: 'Demo Oil Spill',
-            chemicalType: 'Crude Oil',
-            volume: 5000,
-            latitude: 29.7604,
-            longitude: -95.3698,
-            spillTime: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
-            status: 'ACTIVE',
-            priority: 'HIGH',
-            source: 'Pipeline Leak',
-            reporterName: 'System Demo',
-            reporterContact: 'demo@system.com'
-          }
-        ];
-        setActiveSpills(demoSpills);
-      }
+      const demoSpills = [
+        {
+          id: 'demo-1',
+          name: 'Demo Oil Spill',
+          chemicalType: 'Crude Oil',
+          volume: 5000,
+          latitude: 29.7604,
+          longitude: -95.3698,
+          spillTime: new Date(Date.now() - 3600000).toISOString(),
+          status: 'ACTIVE',
+          priority: 'HIGH',
+          source: 'Pipeline Leak',
+          reporterName: 'System Demo',
+          reporterContact: 'demo@system.com'
+        }
+      ];
+      setActiveSpills(demoSpills);
     } finally {
-      if (showLoadingState) {
-        setLoading(false);
-      }
+      if (showLoadingState) setLoading(false);
     }
   };
 
-  // Check for emergency conditions
   const checkForEmergencyConditions = (spills) => {
     const criticalSpills = spills.filter(spill => 
       spill.volume > 10000 || 
@@ -143,70 +121,40 @@ function App() {
     );
 
     if (criticalSpills.length > 0) {
-      const alertMessage = `${criticalSpills.length} critical incident(s) detected requiring immediate attention!`;
-      setEmergencyAlert(alertMessage);
+      setEmergencyAlert(`${criticalSpills.length} critical incident(s) detected requiring immediate attention!`);
     } else {
       setEmergencyAlert(null);
     }
   };
 
-  // Show notification (could be replaced with a proper notification system)
-  const showNotification = (message, type = 'info') => {
-    // Simple notification - could be enhanced with a proper notification library
-    console.log(`[${type.toUpperCase()}] ${message}`);
-    
-    // For now, show critical notifications as alerts
-    if (type === 'error') {
-      setTimeout(() => {
-        alert(message);
-      }, 100);
-    }
-  };
-
-  // Handle spill creation
   const handleSpillCreated = useCallback((newSpill) => {
     setActiveSpills(prev => {
-      // Avoid duplicates
       const exists = prev.some(spill => spill.id === newSpill.id);
-      if (exists) {
-        return prev.map(spill => spill.id === newSpill.id ? newSpill : spill);
-      }
+      if (exists) return prev.map(spill => spill.id === newSpill.id ? newSpill : spill);
       return [...prev, newSpill];
     });
-    
     setSelectedSpill(newSpill);
-    showNotification(`New spill reported: ${newSpill.name}`, 'success');
-    
-    // Check if this creates an emergency condition
     checkForEmergencyConditions([...activeSpills, newSpill]);
   }, [activeSpills]);
 
-  // Handle spill selection
   const handleSpillSelected = useCallback((spill) => {
     setSelectedSpill(spill);
   }, []);
 
-  // Handle spill updates
   const handleSpillUpdated = useCallback((updatedSpill) => {
     setActiveSpills(prev => 
       prev.map(spill => 
         spill.id === updatedSpill.id ? updatedSpill : spill
       )
     );
-    
     if (selectedSpill && selectedSpill.id === updatedSpill.id) {
       setSelectedSpill(updatedSpill);
     }
-    
-    showNotification(`Spill ${updatedSpill.name} updated`, 'info');
   }, [selectedSpill]);
 
-  // Handle dispersion calculation
   const handleCalculateDispersion = async (spillId, simulationHours = 24) => {
     try {
       const result = await apiService.calculateDispersion(spillId, simulationHours);
-      
-      // Update the spill with dispersion data
       setActiveSpills(prev => 
         prev.map(spill => 
           spill.id === spillId 
@@ -214,21 +162,16 @@ function App() {
             : spill
         )
       );
-      
-      showNotification('Dispersion calculation completed', 'success');
       return result;
     } catch (error) {
       console.error('Error calculating dispersion:', error);
-      showNotification('Dispersion calculation failed', 'error');
       throw error;
     }
   };
 
-  // Handle status updates
   const handleStatusUpdate = async (spillId, newStatus) => {
     try {
       await apiService.updateSpillStatus(spillId, newStatus);
-      
       setActiveSpills(prev => 
         prev.map(spill => 
           spill.id === spillId 
@@ -236,34 +179,11 @@ function App() {
             : spill
         )
       );
-      
-      showNotification(`Spill status updated to ${newStatus}`, 'success');
     } catch (error) {
       console.error('Error updating spill status:', error);
-      showNotification('Failed to update spill status', 'error');
     }
   };
 
-  // System status indicator
-  const getSystemStatusClass = () => {
-    switch (systemStatus) {
-      case 'online': return 'status-online';
-      case 'loading': return 'status-loading';
-      case 'error': return 'status-error';
-      default: return 'status-unknown';
-    }
-  };
-
-  const getSystemStatusText = () => {
-    switch (systemStatus) {
-      case 'online': return 'System Online';
-      case 'loading': return 'Updating...';
-      case 'error': return 'Connection Issue';
-      default: return 'Unknown Status';
-    }
-  };
-
-  // Loading screen
   if (loading) {
     return (
       <div className="app-loading">
@@ -284,7 +204,6 @@ function App() {
   return (
     <Router>
       <div className="App">
-        {/* Emergency Alert Banner */}
         {emergencyAlert && (
           <div className="emergency-banner">
             <div className="banner-content">
@@ -309,153 +228,9 @@ function App() {
           </div>
         )}
 
-        {/* Vertical Sidebar Navigation */}
-        <aside className={`sidebar ${sidebarCollapsed ? 'collapsed' : 'expanded'}`}>
-          {/* Sidebar Toggle */}
-          <button 
-            className="sidebar-toggle"
-            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-          >
-            <span className="toggle-icon">
-              {sidebarCollapsed ? '▶' : '◀'}
-            </span>
-          </button>
+        <FloatingPanel />
 
-          {/* Sidebar Header */}
-          <div className="sidebar-header">
-            <div className="app-brand">
-              <div className="brand-icon">💧</div>
-              {!sidebarCollapsed && (
-                <div className="brand-text">
-                  <h1 className="app-title">Water Dispersion Monitor</h1>
-                  <p className="app-subtitle">Emergency Response System</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* System Status */}
-          <div className="sidebar-section">
-            <div className="section-header">
-              <span className="section-icon">⚡</span>
-              {!sidebarCollapsed && <span className="section-title">System Status</span>}
-            </div>
-            {!sidebarCollapsed && (
-              <div className="status-details">
-                <div className={`status-indicator ${getSystemStatusClass()}`}>
-                  <span className="status-dot"></span>
-                  <span className="status-text">{getSystemStatusText()}</span>
-                </div>
-                {lastUpdate && (
-                  <div className="last-update">
-                    Last updated: {lastUpdate.toLocaleTimeString()}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Navigation Menu */}
-          <nav className="sidebar-nav">
-            <div className="nav-section">
-              <div className="section-header">
-                <span className="section-icon">🧭</span>
-                {!sidebarCollapsed && <span className="section-title">Navigation</span>}
-              </div>
-              <div className="nav-items">
-                <SidebarNavLink 
-                  to="/dashboard" 
-                  icon="📊" 
-                  label="Dashboard" 
-                  collapsed={sidebarCollapsed}
-                />
-                <SidebarNavLink 
-                  to="/map" 
-                  icon="🗺️" 
-                  label="Map" 
-                  collapsed={sidebarCollapsed}
-                />
-                <SidebarNavLink 
-                  to="/weather" 
-                  icon="🌤️" 
-                  label="Weather" 
-                  collapsed={sidebarCollapsed}
-                />
-                <SidebarNavLink 
-                  to="/spill" 
-                  icon="🚨" 
-                  label="Report Incident" 
-                  collapsed={sidebarCollapsed}
-                  className="primary"
-                />
-              </div>
-            </div>
-          </nav>
-
-          {/* Active Incidents */}
-          <div className="sidebar-section">
-            <div className="section-header">
-              <span className="section-icon">📋</span>
-              {!sidebarCollapsed && <span className="section-title">Active Incidents</span>}
-            </div>
-            {!sidebarCollapsed && (
-              <div className="incidents-summary">
-                <div className="incident-stat">
-                  <div className="stat-number">{activeSpills.length}</div>
-                  <div className="stat-label">Total Active</div>
-                </div>
-                <div className="incident-stat critical">
-                  <div className="stat-number">
-                    {activeSpills.filter(s => s.priority === 'CRITICAL' || s.volume > 10000).length}
-                  </div>
-                  <div className="stat-label">Critical</div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* System Controls */}
-          <div className="sidebar-section">
-            <div className="section-header">
-              <span className="section-icon">🔧</span>
-              {!sidebarCollapsed && <span className="section-title">Controls</span>}
-            </div>
-            {!sidebarCollapsed && (
-              <div className="controls-panel">
-                <button
-                  className={`control-btn ${autoRefresh ? 'active' : ''}`}
-                  onClick={() => setAutoRefresh(!autoRefresh)}
-                  title={autoRefresh ? 'Disable auto-refresh' : 'Enable auto-refresh'}
-                >
-                  <span className="control-icon">{autoRefresh ? '🔄' : '⏸️'}</span>
-                  <span className="control-label">Auto Refresh</span>
-                </button>
-                <button
-                  className="control-btn"
-                  onClick={() => loadActiveSpills(true)}
-                  title="Refresh data"
-                  disabled={loading}
-                >
-                  <span className="control-icon">🔃</span>
-                  <span className="control-label">Refresh Now</span>
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Footer */}
-          <div className="sidebar-footer">
-            {!sidebarCollapsed && (
-              <div className="footer-content">
-                <div className="version-info">v2.0</div>
-                <div className="uptime-info">99.9% uptime</div>
-              </div>
-            )}
-          </div>
-        </aside>
-
-        {/* Main Content */}
-        <main className={`app-main ${sidebarCollapsed ? 'sidebar-collapsed' : 'sidebar-expanded'}`}>
+        <main className="app-main">
           <Routes>
             <Route 
               path="/dashboard" 
@@ -505,17 +280,6 @@ function App() {
                 />
               } 
             />
-            <Route 
-              path="/settings" 
-              element={
-                <SettingsPage 
-                  autoRefresh={autoRefresh}
-                  onAutoRefreshToggle={setAutoRefresh}
-                  systemStatus={systemStatus}
-                  lastUpdate={lastUpdate}
-                />
-              } 
-            />
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
@@ -525,65 +289,33 @@ function App() {
   );
 }
 
-// Custom sidebar navigation link component
-function SidebarNavLink({ to, icon, label, collapsed, className = '' }) {
+// Custom Floating Panel Component
+function FloatingPanel() {
+  return (
+    <aside className="floating-panel">
+      <div className="icon-bar">
+        <FloatingNavLink to="/dashboard" icon="📊" label="Dashboard" />
+        <FloatingNavLink to="/map" icon="🗺️" label="Map" />
+        <FloatingNavLink to="/weather" icon="🌤️" label="Weather" />
+        <FloatingNavLink to="/spill" icon="🚨" label="Report Incident" className="primary" />
+      </div>
+    </aside>
+  );
+}
+
+function FloatingNavLink({ to, icon, label, className = '' }) {
   const location = useLocation();
   const isActive = location.pathname === to;
-  
+
   return (
     <Link 
       className={`nav-item ${className} ${isActive ? 'active' : ''}`} 
       to={to}
-      title={collapsed ? label : ''}
+      title={label}
     >
       <span className="nav-icon">{icon}</span>
-      {!collapsed && <span className="nav-label">{label}</span>}
+      <span className="nav-label">{label}</span>
     </Link>
-  );
-}
-
-// Simple settings page component
-function SettingsPage({ autoRefresh, onAutoRefreshToggle, systemStatus, lastUpdate }) {
-  return (
-    <div className="settings-page">
-      <div className="settings-header">
-        <h2>System Settings</h2>
-        <p>Configure system behavior and monitoring options</p>
-      </div>
-      
-      <div className="settings-content">
-        <div className="settings-section">
-          <h3>Data Refresh</h3>
-          <label className="setting-item">
-            <input
-              type="checkbox"
-              checked={autoRefresh}
-              onChange={(e) => onAutoRefreshToggle(e.target.checked)}
-            />
-            <span>Auto-refresh data every minute</span>
-          </label>
-        </div>
-        
-        <div className="settings-section">
-          <h3>System Status</h3>
-          <div className="status-info">
-            <p>Current Status: <strong>{systemStatus}</strong></p>
-            {lastUpdate && (
-              <p>Last Update: <strong>{lastUpdate.toLocaleString()}</strong></p>
-            )}
-          </div>
-        </div>
-        
-        <div className="settings-section">
-          <h3>Data Sources</h3>
-          <ul className="data-sources">
-            <li>Weather Data: weather.gov API</li>
-            <li>Tidal Data: NOAA Tides & Currents</li>
-            <li>Chemical Data: PubChem Database</li>
-          </ul>
-        </div>
-      </div>
-    </div>
   );
 }
 

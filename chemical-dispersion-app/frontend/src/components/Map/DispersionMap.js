@@ -33,13 +33,12 @@ function FullscreenControl({ onToggle }) {
     return null;
 }
 
-function DispersionMap({ spills = [], selectedSpill, onSpillSelect, calculateDispersion }) {
+function DispersionMap({ spills = [], selectedSpill, onSpillSelect, onSpillUpdate, onStatusUpdate, calculateDispersion }) {
     const [dispersionData, setDispersionData] = useState(null);
     const [isCalculating, setIsCalculating] = useState(false);
     const [error, setError] = useState(null);
     const [mapCenter] = useState([29.7604, -95.3698]); // Houston, TX
     const [isFullscreen, setIsFullscreen] = useState(false);
-    const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
     const [weatherData, setWeatherData] = useState(null);
     const [tidalData, setTidalData] = useState(null);
     const [spillVisualizations, setSpillVisualizations] = useState({});
@@ -216,14 +215,6 @@ function DispersionMap({ spills = [], selectedSpill, onSpillSelect, calculateDis
         }
     };
 
-    const handleManualCalculation = () => {
-        if (selectedSpill?.id) {
-            hasCalculatedRef.current.delete(selectedSpill.id);
-            lastCalculationRef.current = null;
-            handleCalculateDispersion(selectedSpill.id);
-        }
-    };
-
     const handleEndIncident = async (spillId) => {
         if (!spillId) return;
         
@@ -231,7 +222,7 @@ function DispersionMap({ spills = [], selectedSpill, onSpillSelect, calculateDis
         if (!confirmed) return;
         
         try {
-            await apiService.updateSpillStatus(spillId, 'CLEANED_UP');
+            await onStatusUpdate(spillId, 'CLEANED_UP');
             console.log(`Incident ${spillId} marked as cleaned up`);
         } catch (error) {
             console.error('Error ending incident:', error);
@@ -241,10 +232,6 @@ function DispersionMap({ spills = [], selectedSpill, onSpillSelect, calculateDis
 
     const toggleFullscreen = useCallback(() => {
         setIsFullscreen(prev => !prev);
-    }, []);
-
-    const togglePanel = useCallback(() => {
-        setIsPanelCollapsed(prev => !prev);
     }, []);
 
     const createCustomIcon = (spill) => {
@@ -300,98 +287,6 @@ function DispersionMap({ spills = [], selectedSpill, onSpillSelect, calculateDis
 
     return (
         <div className={`dispersion-map-container ${isFullscreen ? 'fullscreen' : ''}`}>
-            {/* Collapsible Control Panel */}
-            <div className={`control-panel ${isPanelCollapsed ? 'collapsed' : ''}`}>
-                <button className="panel-toggle" onClick={togglePanel}>
-                    <span className={`toggle-icon ${isPanelCollapsed ? 'collapsed' : ''}`}>
-                        {isPanelCollapsed ? '▼' : '▲'}
-                    </span>
-                    {isPanelCollapsed ? 'Show Controls' : 'Hide Controls'}
-                </button>
-                
-                <div className="panel-content">
-                    <div className="panel-header">
-                        <h2>Chemical Dispersion Map</h2>
-                        <div className="header-actions">
-                            <button 
-                                className="btn btn-secondary btn-sm"
-                                onClick={toggleFullscreen}
-                            >
-                                {isFullscreen ? '⤌ Exit Fullscreen' : '⤢ Fullscreen'}
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Map Controls */}
-                    <div className="map-controls">
-                        {selectedSpill && (
-                            <div className="selected-spill-controls">
-                                <h3>Selected: {selectedSpill.name}</h3>
-                                <div className="control-buttons">
-                                    <button 
-                                        onClick={handleManualCalculation}
-                                        disabled={isCalculating}
-                                        className="btn btn-primary btn-sm"
-                                    >
-                                        {isCalculating ? 'Calculating...' : 'Recalculate Dispersion'}
-                                    </button>
-                                    <button 
-                                        onClick={() => handleEndIncident(selectedSpill.id)}
-                                        className="btn btn-danger btn-sm"
-                                    >
-                                        End Incident
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-
-                         {/* Environmental Data Display */}
-                        {(weatherData || tidalData) && (
-                            <div className="environmental-data">
-                                <h4>Environmental Conditions</h4>
-                                {weatherData && (
-                                    <div className="weather-summary">
-                                        <span>🌡️ {weatherData.temperature}°C</span>
-                                        <span>💨 {weatherData.windSpeed} @ {weatherData.windDirection}°</span>
-                                        <span>☁️ {weatherData.weatherCondition}</span>
-                                    </div>
-                                )}
-                                {tidalData && (
-                                    <div className="tide-summary">
-                                        <span>🌊 Tide: {tidalData.tideHeight}m</span>
-                                        <span>➡️ Current: {tidalData.currentSpeed} m/s</span>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                        {/* Legend */}
-                        <div className="map-legend">
-                            <h4>Legend</h4>
-                            <div className="legend-items">
-                                <div className="legend-item">
-                                    <div className="legend-marker critical"></div>
-                                    <span>Critical (&gt;10,000L)</span>
-                                </div>
-                                <div className="legend-item">
-                                    <div className="legend-marker high"></div>
-                                    <span>High Priority</span>
-                                </div>
-                                <div className="legend-item">
-                                    <div className="legend-marker medium"></div>
-                                    <span>Medium Priority</span>
-                                </div>
-                                <div className="legend-item">
-                                    <div className="legend-marker cleaned"></div>
-                                    <span>Cleaned Up</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-
             {/* Error Display */}
             {error && (
                 <div className="error-overlay">
@@ -460,7 +355,7 @@ function DispersionMap({ spills = [], selectedSpill, onSpillSelect, calculateDis
                                             
                                             <div className="popup-actions">
                                                 <button 
-                                                    onClick={handleManualCalculation}
+                                                    onClick={() => handleCalculateDispersion(spill.id)}
                                                     disabled={isCalculating}
                                                     className="btn btn-sm btn-primary"
                                                 >
@@ -508,7 +403,7 @@ function DispersionMap({ spills = [], selectedSpill, onSpillSelect, calculateDis
             </div>
 
             {/* Spill Details Panel (when selected) */}
-            {selectedSpill && !isPanelCollapsed && (
+            {selectedSpill && (
                 <div className="spill-details-sidebar">
                     <div className="sidebar-header">
                         <h3>{selectedSpill.name}</h3>
@@ -568,7 +463,7 @@ function DispersionMap({ spills = [], selectedSpill, onSpillSelect, calculateDis
 
                         <div className="sidebar-actions">
                             <button 
-                                onClick={handleManualCalculation}
+                                onClick={() => handleCalculateDispersion(selectedSpill.id)}
                                 disabled={isCalculating}
                                 className="btn btn-primary"
                             >
