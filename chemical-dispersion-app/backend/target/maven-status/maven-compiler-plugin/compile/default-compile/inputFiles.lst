@@ -2,8 +2,8 @@ C:\water\chemical-dispersion-app\backend\src\main\java\com\dispersion\controller
 C:\water\chemical-dispersion-app\backend\src\main\java\com\dispersion\controller\TideController.java
 C:\water\chemical-dispersion-app\backend\src\main\java\com\dispersion\model\WeatherData.java
 C:\water\chemical-dispersion-app\backend\src\main\java\com\dispersion\config\WebClientConfig.java
+C:\water\chemical-dispersion-app\backend\src\main\java\com\dispersion\controller\ChemicalController.java
 C:\water\chemical-dispersion-app\backend\src\main\java\com\dispersion\service\DispersionService.java
-C:\water\chemical-dispersion-app\backend\src\main\java\com\dispersion\controller\SpillController.java
 C:\water\chemical-dispersion-app\backend\src\main\java\com\dispersion\service\ChemicalService.java
 C:\water\chemical-dispersion-app\backend\src\main\java\com\dispersion\dto\SpillRequest.java
 C:\water\chemical-dispersion-app\backend\src\main\java\com\dispersion\model\Spill.java

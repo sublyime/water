@@ -50,16 +50,21 @@ public class DispersionController {
             @RequestParam UUID spillId,
             @RequestParam(defaultValue = "24") int simulationHours) {
         try {
+            System.out.println("Calculate dispersion requested for spill: " + spillId);
             DispersionResponse response = dispersionService.calculateDispersion(spillId);
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
+            System.err.println("Error calculating dispersion: " + e.getMessage());
             return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            System.err.println("Unexpected error in dispersion calculation: " + e.getMessage());
+            return ResponseEntity.internalServerError().build();
         }
     }
 
     @GetMapping("/models")
-    public ResponseEntity<List<Map<String, Object>>> getAvailableModels() {
-        List<Map<String, Object>> models = List.of(
+    public ResponseEntity<List<Map<String, String>>> getAvailableModels() {
+        List<Map<String, String>> models = List.of(
                 Map.of("name", "Gaussian Plume", "description", "Standard atmospheric dispersion model"),
                 Map.of("name", "ALOHA Compatible", "description", "EPA ALOHA compatible modeling"),
                 Map.of("name", "Simple Diffusion", "description", "Basic diffusion calculation"));
@@ -67,32 +72,59 @@ public class DispersionController {
     }
 
     @GetMapping("/grid/{spillId}")
-    public ResponseEntity<FluidDynamicsService.DispersionGrid> getDispersionGrid(
-            @PathVariable UUID spillId) {
+    public ResponseEntity<Object> getDispersionGrid(@PathVariable UUID spillId) {
         try {
+            System.out.println("Grid data requested for spill: " + spillId);
             DispersionResponse response = dispersionService.calculateDispersion(spillId);
             return ResponseEntity.ok(response.getDispersionGrid());
         } catch (RuntimeException e) {
+            System.err.println("Error getting dispersion grid: " + e.getMessage());
             return ResponseEntity.notFound().build();
         }
     }
 
     @GetMapping("/status")
     public ResponseEntity<Map<String, Object>> getSystemStatus() {
-        List<Spill> activeSpills = dispersionService.getActiveSpills();
-        double totalVolume = activeSpills.stream().mapToDouble(s -> s.getVolume().doubleValue()).sum();
-        long criticalSpills = activeSpills.stream()
-                .filter(s -> s.getVolume().doubleValue() > 10000 ||
-                        s.getChemicalType().toLowerCase().contains("toxic") ||
-                        s.getChemicalType().toLowerCase().contains("hazard"))
-                .count();
+        try {
+            List<Spill> activeSpills = dispersionService.getActiveSpills();
+            List<Spill> allSpills = dispersionService.getAllSpills();
 
+            double totalVolume = activeSpills.stream()
+                    .filter(s -> s.getVolume() != null)
+                    .mapToDouble(s -> s.getVolume().doubleValue())
+                    .sum();
+
+            long criticalSpills = activeSpills.stream()
+                    .filter(s -> s.getVolume() != null && s.getChemicalType() != null)
+                    .filter(s -> s.getVolume().doubleValue() > 10000 ||
+                            s.getChemicalType().toLowerCase().contains("toxic") ||
+                            s.getChemicalType().toLowerCase().contains("hazard"))
+                    .count();
+
+            return ResponseEntity.ok(Map.of(
+                    "activeSpills", activeSpills.size(),
+                    "totalSpills", allSpills.size(),
+                    "totalVolume", totalVolume,
+                    "criticalSpills", criticalSpills,
+                    "systemHealth", "OPERATIONAL",
+                    "lastUpdate", LocalDateTime.now()));
+        } catch (Exception e) {
+            System.err.println("Error getting system status: " + e.getMessage());
+            return ResponseEntity.ok(Map.of(
+                    "activeSpills", 0,
+                    "totalSpills", 0,
+                    "totalVolume", 0,
+                    "criticalSpills", 0,
+                    "systemHealth", "ERROR",
+                    "lastUpdate", LocalDateTime.now(),
+                    "error", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/health")
+    public ResponseEntity<Map<String, String>> healthCheck() {
         return ResponseEntity.ok(Map.of(
-                "activeSpills", activeSpills.size(),
-                "totalSpills", dispersionService.getAllSpills().size(),
-                "totalVolume", totalVolume,
-                "criticalSpills", criticalSpills,
-                "systemHealth", "OPERATIONAL",
-                "lastUpdate", LocalDateTime.now()));
+                "status", "UP",
+                "timestamp", LocalDateTime.now().toString()));
     }
 }

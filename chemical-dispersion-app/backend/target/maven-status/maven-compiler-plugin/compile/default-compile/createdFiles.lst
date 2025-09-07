@@ -1,3 +1,4 @@
+com\dispersion\controller\ChemicalController.class
 com\dispersion\repository\ChemicalPropertiesRepository.class
 com\dispersion\DispersionApplication$1.class
 com\dispersion\service\TideService.class
@@ -20,7 +21,6 @@ com\dispersion\dto\DispersionResponse.class
 com\dispersion\dto\DispersionResponse$ConcentrationPoint.class
 com\dispersion\model\ChemicalProperties.class
 com\dispersion\service\FluidDynamicsService$DispersionResult.class
-com\dispersion\controller\SpillController.class
 com\dispersion\service\DispersionService.class
 com\dispersion\model\TideData.class
 com\dispersion\repository\TideRepository.class

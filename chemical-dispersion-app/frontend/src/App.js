@@ -15,6 +15,7 @@ function App() {
   const [systemStatus, setSystemStatus] = useState('online');
   const [lastUpdate, setLastUpdate] = useState(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // Load initial data and set up auto-refresh
   useEffect(() => {
@@ -308,72 +309,153 @@ function App() {
           </div>
         )}
 
-        {/* Main Header */}
-        <header className="app-header">
-          <div className="header-content">
-            {/* Logo and Title */}
-            <div className="header-brand">
-              <h1 className="app-title">
-                <span className="title-icon">💧</span>
-                Water Dispersion Monitor
-              </h1>
-              <div className="system-status">
-                <div className={`status-indicator ${getSystemStatusClass()}`}></div>
-                <span className="status-text">{getSystemStatusText()}</span>
+        {/* Vertical Sidebar Navigation */}
+        <aside className={`sidebar ${sidebarCollapsed ? 'collapsed' : 'expanded'}`}>
+          {/* Sidebar Toggle */}
+          <button 
+            className="sidebar-toggle"
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          >
+            <span className="toggle-icon">
+              {sidebarCollapsed ? '▶' : '◀'}
+            </span>
+          </button>
+
+          {/* Sidebar Header */}
+          <div className="sidebar-header">
+            <div className="app-brand">
+              <div className="brand-icon">💧</div>
+              {!sidebarCollapsed && (
+                <div className="brand-text">
+                  <h1 className="app-title">Water Dispersion Monitor</h1>
+                  <p className="app-subtitle">Emergency Response System</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* System Status */}
+          <div className="sidebar-section">
+            <div className="section-header">
+              <span className="section-icon">⚡</span>
+              {!sidebarCollapsed && <span className="section-title">System Status</span>}
+            </div>
+            {!sidebarCollapsed && (
+              <div className="status-details">
+                <div className={`status-indicator ${getSystemStatusClass()}`}>
+                  <span className="status-dot"></span>
+                  <span className="status-text">{getSystemStatusText()}</span>
+                </div>
                 {lastUpdate && (
-                  <span className="last-update">
+                  <div className="last-update">
                     Last updated: {lastUpdate.toLocaleTimeString()}
-                  </span>
+                  </div>
                 )}
               </div>
+            )}
+          </div>
+
+          {/* Navigation Menu */}
+          <nav className="sidebar-nav">
+            <div className="nav-section">
+              <div className="section-header">
+                <span className="section-icon">🧭</span>
+                {!sidebarCollapsed && <span className="section-title">Navigation</span>}
+              </div>
+              <div className="nav-items">
+                <SidebarNavLink 
+                  to="/dashboard" 
+                  icon="📊" 
+                  label="Dashboard" 
+                  collapsed={sidebarCollapsed}
+                />
+                <SidebarNavLink 
+                  to="/map" 
+                  icon="🗺️" 
+                  label="Map" 
+                  collapsed={sidebarCollapsed}
+                />
+                <SidebarNavLink 
+                  to="/weather" 
+                  icon="🌤️" 
+                  label="Weather" 
+                  collapsed={sidebarCollapsed}
+                />
+                <SidebarNavLink 
+                  to="/spill" 
+                  icon="🚨" 
+                  label="Report Incident" 
+                  collapsed={sidebarCollapsed}
+                  className="primary"
+                />
+              </div>
             </div>
+          </nav>
 
-            {/* Navigation */}
-            <nav className="main-nav">
-              <NavLink to="/dashboard" icon="🏠" label="Dashboard" />
-              <NavLink to="/map" icon="🗺️" label="Map" />
-              <NavLink to="/weather" icon="🌤️" label="Weather" />
-              <NavLink to="/spill" icon="🚨" label="Report Incident" className="nav-btn-primary" />
-            </nav>
-
-            {/* Status Indicators */}
-            <div className="header-status">
-              <div className="status-grid">
-                <div className="status-item">
-                  <div className="status-value">{activeSpills.length}</div>
-                  <div className="status-label">Active</div>
+          {/* Active Incidents */}
+          <div className="sidebar-section">
+            <div className="section-header">
+              <span className="section-icon">📋</span>
+              {!sidebarCollapsed && <span className="section-title">Active Incidents</span>}
+            </div>
+            {!sidebarCollapsed && (
+              <div className="incidents-summary">
+                <div className="incident-stat">
+                  <div className="stat-number">{activeSpills.length}</div>
+                  <div className="stat-label">Total Active</div>
                 </div>
-                <div className="status-item critical">
-                  <div className="status-value">
+                <div className="incident-stat critical">
+                  <div className="stat-number">
                     {activeSpills.filter(s => s.priority === 'CRITICAL' || s.volume > 10000).length}
                   </div>
-                  <div className="status-label">Critical</div>
+                  <div className="stat-label">Critical</div>
                 </div>
               </div>
-              
-              <div className="header-controls">
+            )}
+          </div>
+
+          {/* System Controls */}
+          <div className="sidebar-section">
+            <div className="section-header">
+              <span className="section-icon">🔧</span>
+              {!sidebarCollapsed && <span className="section-title">Controls</span>}
+            </div>
+            {!sidebarCollapsed && (
+              <div className="controls-panel">
                 <button
-                  className={`btn btn-sm ${autoRefresh ? 'btn-primary' : 'btn-secondary'}`}
+                  className={`control-btn ${autoRefresh ? 'active' : ''}`}
                   onClick={() => setAutoRefresh(!autoRefresh)}
                   title={autoRefresh ? 'Disable auto-refresh' : 'Enable auto-refresh'}
                 >
-                  {autoRefresh ? '🔄' : '⏸️'}
+                  <span className="control-icon">{autoRefresh ? '🔄' : '⏸️'}</span>
+                  <span className="control-label">Auto Refresh</span>
                 </button>
                 <button
-                  className="btn btn-sm btn-secondary"
+                  className="control-btn"
                   onClick={() => loadActiveSpills(true)}
                   title="Refresh data"
                   disabled={loading}
                 >
-                  🔃
+                  <span className="control-icon">🔃</span>
+                  <span className="control-label">Refresh Now</span>
                 </button>
               </div>
-            </div>
+            )}
           </div>
-        </header>
+
+          {/* Footer */}
+          <div className="sidebar-footer">
+            {!sidebarCollapsed && (
+              <div className="footer-content">
+                <div className="version-info">v2.0</div>
+                <div className="uptime-info">99.9% uptime</div>
+              </div>
+            )}
+          </div>
+        </aside>
 
         {/* Main Content */}
-        <main className="app-main">
+        <main className={`app-main ${sidebarCollapsed ? 'sidebar-collapsed' : 'sidebar-expanded'}`}>
           <Routes>
             <Route 
               path="/dashboard" 
@@ -438,39 +520,24 @@ function App() {
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </main>
-
-        {/* Footer */}
-        <footer className="app-footer">
-          <div className="footer-content">
-            <div className="footer-info">
-              <span>Water Dispersion Monitor v2.0</span>
-              <span className="separator">•</span>
-              <span>Emergency Response System</span>
-            </div>
-            <div className="footer-stats">
-              <span>System Uptime: 99.9%</span>
-              <span className="separator">•</span>
-              <span>Data Sources: Weather.gov, NOAA, PubChem</span>
-            </div>
-          </div>
-        </footer>
       </div>
     </Router>
   );
 }
 
-// Custom navigation link component
-function NavLink({ to, icon, label, className = '' }) {
+// Custom sidebar navigation link component
+function SidebarNavLink({ to, icon, label, collapsed, className = '' }) {
   const location = useLocation();
   const isActive = location.pathname === to;
   
   return (
     <Link 
-      className={`nav-btn ${className} ${isActive ? 'active' : ''}`} 
+      className={`nav-item ${className} ${isActive ? 'active' : ''}`} 
       to={to}
+      title={collapsed ? label : ''}
     >
       <span className="nav-icon">{icon}</span>
-      <span className="nav-label">{label}</span>
+      {!collapsed && <span className="nav-label">{label}</span>}
     </Link>
   );
 }

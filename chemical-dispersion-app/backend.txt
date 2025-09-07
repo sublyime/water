@@ -1,6 +1,4 @@
-Volume serial number is EE31-E1B4
-C:.
-│   pom.xml
+  pom.xml
 │   
 ├───src
 │   ├───main
@@ -14,6 +12,7 @@ C:.
 │   │   │           │       WebClientConfig.java
 │   │   │           │
 │   │   │           ├───controller
+│   │   │           │       ChemicalController.java
 │   │   │           │       DispersionController.java
 │   │   │           │       MapController.java
 │   │   │           │       SpillController.java
@@ -26,16 +25,19 @@ C:.
 │   │   │           │       SpillRequest.java
 │   │   │           │
 │   │   │           ├───model
+│   │   │           │       ChemicalProperties.java
 │   │   │           │       Spill.java
 │   │   │           │       TideData.java
 │   │   │           │       WeatherData.java
 │   │   │           │
 │   │   │           ├───repository
+│   │   │           │       ChemicalPropertiesRepository.java
 │   │   │           │       SpillRepository.java
 │   │   │           │       TideRepository.java
 │   │   │           │       WeatherRepository.java
 │   │   │           │
 │   │   │           └───service
+│   │   │                   ChemicalService.java
 │   │   │                   DispersionService.java
 │   │   │                   FluidDynamicsService.java
 │   │   │                   SpillService.java
@@ -67,6 +69,7 @@ C:.
     │   │       │       WebClientConfig.class
     │   │       │
     │   │       ├───controller
+    │   │       │       ChemicalController.class
     │   │       │       DispersionController.class
     │   │       │       MapController.class
     │   │       │       SpillController.class
@@ -82,19 +85,21 @@ C:.
     │   │       │       SpillRequest.class
     │   │       │
     │   │       ├───model
+    │   │       │       ChemicalProperties.class
     │   │       │       Spill$SpillStatus.class
     │   │       │       Spill.class
     │   │       │       TideData.class
     │   │       │       WeatherData.class
     │   │       │
     │   │       ├───repository
+    │   │       │       ChemicalPropertiesRepository.class
     │   │       │       SpillRepository.class
     │   │       │       TideRepository.class
     │   │       │       WeatherRepository.class
     │   │       │
     │   │       └───service
+    │   │               ChemicalService.class
     │   │               DispersionService.class
-    │   │               FluidDynamicsService$ChemicalProperties.class
     │   │               FluidDynamicsService$DispersionGrid.class
     │   │               FluidDynamicsService$DispersionResult.class
     │   │               FluidDynamicsService.class
@@ -107,22 +112,14 @@ C:.
     │       └───migration
     │               V1__initial_schema.sql
     │
-    ├───failsafe-reports
-    │       failsafe-summary.xml
-    │
     ├───generated-sources
     │   └───annotations
-    ├───generated-test-sources
-    │   └───test-annotations
     ├───maven-archiver
     │       pom.properties
     │
-    ├───maven-status
-    │   └───maven-compiler-plugin
-    │       └───compile
-    │           └───default-compile
-    │                   createdFiles.lst
-    │                   inputFiles.lst
-    │
-    └───test-classes
-PS C:\water\chemical-dispersion-app\backend> 
+    └───maven-status
+        └───maven-compiler-plugin
+            └───compile
+                └───default-compile
+                        createdFiles.lst
+                        inputFiles.lst
