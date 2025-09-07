@@ -1,44 +1,128 @@
-──main
-│   ├───java
-│   │   └───com
-│   │       └───dispersion
-│   │           │   DispersionApplication.java
-│   │           │   
-│   │           ├───config
-│   │           │       GlobalExceptionHandler.java
-│   │           │
-│   │           ├───controller
-│   │           │       DispersionController.java
-│   │           │       MapController.java
-│   │           │       SpillController.java
-│   │           │
-│   │           ├───dto
-│   │           │       DispersionResponse.java
-│   │           │       SpillRequest.java
-│   │           │
-│   │           ├───model
-│   │           │       Spill.java
-│   │           │       TideData.java
-│   │           │       WeatherData.java
-│   │           │
-│   │           ├───repository
-│   │           │       SpillRepository.java
-│   │           │       TideRepository.java
-│   │           │       WeatherRepository.java
-│   │           │
-│   │           └───service
-│   │                   DispersionService.java
-│   │                   FluidDynamicsService.java
-│   │                   SpillService.java
-│   │                   TideService.java
-│   │                   WeatherService.java
+Volume serial number is EE31-E1B4
+C:.
+│   pom.xml
+│   
+├───src
+│   ├───main
+│   │   ├───java
+│   │   │   └───com
+│   │   │       └───dispersion
+│   │   │           │   DispersionApplication.java
+│   │   │           │
+│   │   │           ├───config
+│   │   │           │       GlobalExceptionHandler.java
+│   │   │           │       WebClientConfig.java
+│   │   │           │
+│   │   │           ├───controller
+│   │   │           │       DispersionController.java
+│   │   │           │       MapController.java
+│   │   │           │       SpillController.java
+│   │   │           │       StreamController.java
+│   │   │           │       TideController.java
+│   │   │           │       WeatherController.java
+│   │   │           │
+│   │   │           ├───dto
+│   │   │           │       DispersionResponse.java
+│   │   │           │       SpillRequest.java
+│   │   │           │
+│   │   │           ├───model
+│   │   │           │       Spill.java
+│   │   │           │       TideData.java
+│   │   │           │       WeatherData.java
+│   │   │           │
+│   │   │           ├───repository
+│   │   │           │       SpillRepository.java
+│   │   │           │       TideRepository.java
+│   │   │           │       WeatherRepository.java
+│   │   │           │
+│   │   │           └───service
+│   │   │                   DispersionService.java
+│   │   │                   FluidDynamicsService.java
+│   │   │                   SpillService.java
+│   │   │                   TideService.java
+│   │   │                   WeatherService.java
+│   │   │
+│   │   └───resources
+│   │       │   application.yml
+│   │       │
+│   │       └───db
+│   │           └───migration
+│   │                   V1__initial_schema.sql
 │   │
-│   └───resources
-│       │   application.yml
-│       │
-│       └───db
-│           └───migration
-│                   V1__initial_schema.sql
-│
-└───test
-PS C:\water\chemical-dispersion-app\backend\src> 
+│   └───test
+└───target
+    │   chemical-dispersion-app-1.0.0-SNAPSHOT.jar
+    │   chemical-dispersion-app-1.0.0-SNAPSHOT.jar.original
+    │
+    ├───classes
+    │   │   application.yml
+    │   │
+    │   ├───com
+    │   │   └───dispersion
+    │   │       │   DispersionApplication$1.class
+    │   │       │   DispersionApplication.class
+    │   │       │
+    │   │       ├───config
+    │   │       │       GlobalExceptionHandler.class
+    │   │       │       WebClientConfig.class
+    │   │       │
+    │   │       ├───controller
+    │   │       │       DispersionController.class
+    │   │       │       MapController.class
+    │   │       │       SpillController.class
+    │   │       │       StreamController.class
+    │   │       │       TideController.class
+    │   │       │       WeatherController.class
+    │   │       │
+    │   │       ├───dto
+    │   │       │       DispersionResponse$ConcentrationPoint.class
+    │   │       │       DispersionResponse$LatLngPoint.class
+    │   │       │       DispersionResponse$PlumeContour.class
+    │   │       │       DispersionResponse.class
+    │   │       │       SpillRequest.class
+    │   │       │
+    │   │       ├───model
+    │   │       │       Spill$SpillStatus.class
+    │   │       │       Spill.class
+    │   │       │       TideData.class
+    │   │       │       WeatherData.class
+    │   │       │
+    │   │       ├───repository
+    │   │       │       SpillRepository.class
+    │   │       │       TideRepository.class
+    │   │       │       WeatherRepository.class
+    │   │       │
+    │   │       └───service
+    │   │               DispersionService.class
+    │   │               FluidDynamicsService$ChemicalProperties.class
+    │   │               FluidDynamicsService$DispersionGrid.class
+    │   │               FluidDynamicsService$DispersionResult.class
+    │   │               FluidDynamicsService.class
+    │   │               SpillService.class
+    │   │               TideService$TidePoint.class
+    │   │               TideService.class
+    │   │               WeatherService.class
+    │   │
+    │   └───db
+    │       └───migration
+    │               V1__initial_schema.sql
+    │
+    ├───failsafe-reports
+    │       failsafe-summary.xml
+    │
+    ├───generated-sources
+    │   └───annotations
+    ├───generated-test-sources
+    │   └───test-annotations
+    ├───maven-archiver
+    │       pom.properties
+    │
+    ├───maven-status
+    │   └───maven-compiler-plugin
+    │       └───compile
+    │           └───default-compile
+    │                   createdFiles.lst
+    │                   inputFiles.lst
+    │
+    └───test-classes
+PS C:\water\chemical-dispersion-app\backend> 

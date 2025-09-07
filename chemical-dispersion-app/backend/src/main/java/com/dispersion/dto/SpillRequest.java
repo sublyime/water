@@ -1,6 +1,6 @@
 package com.dispersion.dto;
 
-import javax.validation.constraints.*;
+import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -53,7 +53,7 @@ public class SpillRequest {
     @Size(max = 100, message = "Email must be less than 100 characters")
     private String contactEmail;
 
-    // Getters and setters
+    // All getters and setters remain the same
     public String getName() {
         return name;
     }

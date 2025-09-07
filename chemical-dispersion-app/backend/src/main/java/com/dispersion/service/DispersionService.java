@@ -5,6 +5,7 @@ import com.dispersion.dto.SpillRequest;
 import com.dispersion.model.Spill;
 import com.dispersion.model.TideData;
 import com.dispersion.model.WeatherData;
+import com.dispersion.model.ChemicalProperties;
 import com.dispersion.repository.SpillRepository;
 import com.dispersion.service.FluidDynamicsService.DispersionGrid;
 import com.dispersion.service.FluidDynamicsService.DispersionResult;
@@ -34,12 +35,13 @@ public class DispersionService {
     private TideService tideService;
 
     @Autowired
+    private ChemicalService chemicalService;
+
+    @Autowired
     private FluidDynamicsService fluidDynamicsService;
 
-    // List to hold connected clients for real-time updates
     private final List<SseEmitter> clients = new CopyOnWriteArrayList<>();
 
-    // Method to add a new client (SseEmitter)
     public void addClient(SseEmitter emitter) {
         clients.add(emitter);
         emitter.onCompletion(() -> clients.remove(emitter));
@@ -47,23 +49,30 @@ public class DispersionService {
         System.out.println("New SSE client added. Total clients: " + clients.size());
     }
 
-    // Scheduled method to send updates to all clients every 10 seconds
-    @Scheduled(fixedRate = 10000)
+    @Scheduled(fixedRate = 60000) // Every minute
     public void sendRealTimeUpdates() {
-        System.out.println("Attempting to send real-time updates...");
-        List<Spill> activeSpills = getActiveSpills(); // Use existing method to get data
+        System.out.println("Sending real-time updates...");
+        List<Spill> activeSpills = getActiveSpills();
+
+        // Recalculate dispersion for all active spills
+        for (Spill spill : activeSpills) {
+            try {
+                calculateDispersion(spill.getId());
+            } catch (Exception e) {
+                System.err.println("Error updating dispersion for spill " + spill.getId() + ": " + e.getMessage());
+            }
+        }
+
         for (SseEmitter client : clients) {
             try {
                 client.send(SseEmitter.event().data(activeSpills));
-                System.out.println("Update sent to a client.");
+                System.out.println("Update sent to client.");
             } catch (IOException e) {
                 System.err.println("Failed to send update to client: " + e.getMessage());
-                // Client likely disconnected, will be removed by onCompletion/onTimeout
             }
         }
     }
 
-    // Existing methods from your previous code
     public Spill createSpill(SpillRequest request) {
         Spill spill = new Spill();
         spill.setName(request.getName());
@@ -71,9 +80,22 @@ public class DispersionService {
         spill.setVolume(request.getVolume());
         spill.setLatitude(request.getLatitude());
         spill.setLongitude(request.getLongitude());
-        spill.setSpillTime(request.getSpillTime());
+        spill.setSpillTime(request.getSpillTime() != null ? request.getSpillTime() : LocalDateTime.now());
         spill.setWaterDepth(request.getWaterDepth());
         spill.setStatus(Spill.SpillStatus.ACTIVE);
+        spill.setDescription(request.getDescription());
+        spill.setReportedBy(request.getReportedBy());
+        spill.setContactPhone(request.getContactPhone());
+        spill.setContactEmail(request.getContactEmail());
+
+        // Get or fetch chemical properties
+        try {
+            ChemicalProperties chemicalProps = chemicalService.getOrFetchChemicalProperties(request.getChemicalType());
+            System.out.println("Chemical properties loaded for: " + chemicalProps.getName());
+        } catch (Exception e) {
+            System.err.println("Error loading chemical properties: " + e.getMessage());
+        }
+
         return spillRepository.save(spill);
     }
 
@@ -81,21 +103,30 @@ public class DispersionService {
         Spill spill = spillRepository.findById(spillId)
                 .orElseThrow(() -> new RuntimeException("Spill not found with id: " + spillId));
 
+        // Get current weather data
         WeatherData weather = weatherService.getCurrentWeather(
                 spill.getLatitude().doubleValue(),
                 spill.getLongitude().doubleValue());
+
+        // Get tide forecast
         List<TideData> tides = tideService.getTideForecast(
                 spill.getLatitude().doubleValue(),
                 spill.getLongitude().doubleValue(),
                 24);
 
-        DispersionResult result = fluidDynamicsService.calculateDispersion(spill, weather, tides);
+        // Get chemical properties
+        ChemicalProperties chemical = chemicalService.getOrFetchChemicalProperties(spill.getChemicalType());
+
+        // Calculate dispersion
+        DispersionResult result = fluidDynamicsService.calculateDispersion(spill, weather, tides, chemical);
 
         DispersionResponse response = new DispersionResponse();
         response.setSpillId(spillId);
         response.setCalculationTime(LocalDateTime.now());
         response.setDispersionGrid(result.getDispersionGrid());
         response.setAffectedAreaKm2(BigDecimal.valueOf(calculateAffectedArea(result.getDispersionGrid())));
+        response.setStatus("COMPLETED");
+
         return response;
     }
 
@@ -113,12 +144,16 @@ public class DispersionService {
     }
 
     public List<DispersionResponse> getCalculationHistory(UUID spillId) {
+        // Return empty list for now - would implement with calculation results table
         return new ArrayList<>();
     }
 
     public Spill updateSpillStatus(UUID spillId, Spill.SpillStatus status) {
         Spill spill = getSpillById(spillId);
         spill.setStatus(status);
+        if (status == Spill.SpillStatus.CLEANED_UP) {
+            spill.setCleanupCompletedAt(LocalDateTime.now());
+        }
         return spillRepository.save(spill);
     }
 
@@ -137,6 +172,10 @@ public class DispersionService {
 
     public List<Spill> getActiveSpills() {
         return spillRepository.findByStatus(Spill.SpillStatus.ACTIVE);
+    }
+
+    public List<Spill> getAllSpills() {
+        return spillRepository.findAll();
     }
 
     public List<Spill> getSpillByIds(List<UUID> ids) {

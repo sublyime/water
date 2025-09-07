@@ -1,7 +1,7 @@
 package com.dispersion.model;
 
-import javax.persistence.*;
-import javax.validation.constraints.*;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.GenericGenerator;
@@ -85,6 +85,7 @@ public class Spill {
         ACTIVE, CONTAINED, CLEANED_UP, MONITORING, ARCHIVED
     }
 
+    // All getters and setters remain the same
     public UUID getId() {
         return id;
     }

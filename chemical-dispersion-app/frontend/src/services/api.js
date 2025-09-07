@@ -1,142 +1,197 @@
 import axios from 'axios';
 
-// Change baseURL from '/api/v1' to '/api' to match your Spring Boot configuration
 const api = axios.create({
-  baseURL: '/api', // Removed /v1 to match your server.servlet.context-path=/api
-  timeout: 30000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+    baseURL: '/api',
+    timeout: 30000,
+    headers: {
+        'Content-Type': 'application/json',
+    },
 });
 
 api.interceptors.request.use(
-  (config) => {
-    console.log(`🚀 ${config.method?.toUpperCase()} ${config.url}`, config.data || config.params);
-    return config;
-  },
-  (error) => {
-    console.error('❌ Request Error:', error);
-    return Promise.reject(error);
-  }
+    (config) => {
+        console.log(`🚀 ${config.method?.toUpperCase()} ${config.url}`, config.data || config.params);
+        return config;
+    },
+    (error) => {
+        console.error('❌ Request Error:', error);
+        return Promise.reject(error);
+    }
 );
 
 api.interceptors.response.use(
-  (response) => {
-    console.log(`✅ ${response.config.method?.toUpperCase()} ${response.config.url}`, response.data);
-    return response;
-  },
-  (error) => {
-    console.error('❌ Response Error:', error.response?.data || error.message);
-    if (error.response?.status === 404) {
-      throw new Error('Resource not found');
-    } else if (error.response?.status === 400) {
-      throw new Error(error.response.data.message || 'Invalid request');
-    } else if (error.response?.status === 500) {
-      throw new Error('Server error occurred');
-    } else if (error.code === 'ECONNABORTED') {
-      throw new Error('Request timeout - please try again');
+    (response) => {
+        console.log(`✅ ${response.config.method?.toUpperCase()} ${response.config.url}`, response.data);
+        return response;
+    },
+    (error) => {
+        console.error('❌ Response Error:', error.response?.data || error.message);
+        if (error.response?.status === 404) {
+            throw new Error('Resource not found');
+        } else if (error.response?.status === 400) {
+            throw new Error(error.response.data.message || 'Invalid request');
+        } else if (error.response?.status === 500) {
+            throw new Error('Server error occurred');
+        } else if (error.code === 'ECONNABORTED') {
+            throw new Error('Request timeout - please try again');
+        }
+        throw error;
     }
-    throw error;
-  }
 );
 
 export const apiService = {
-  // Spill Endpoints
-  async getAllSpills() {
-    // This endpoint returns all spills, active or contained.
-    return await api.get('/dispersion/spills/all');
-  },
+    // Spill Endpoints - Return data directly
+    async getAllSpills() {
+        const response = await api.get('/dispersion/spills/all');
+        return response.data;
+    },
 
-  async getActiveSpills() {
-    return await api.get('/dispersion/spills');
-  },
+    async getActiveSpills() {
+        const response = await api.get('/dispersion/spills');
+        return response.data;
+    },
 
-  async createSpill(spillData) {
-    return await api.post('/dispersion/spills', spillData);
-  },
+    async createSpill(spillData) {
+        const response = await api.post('/dispersion/spills', spillData);
+        return response.data;
+    },
 
-  async updateSpillStatus(spillId, status) {
-    return await api.put(`/dispersion/spills/${spillId}/status`, null, {
-      params: { status }
-    });
-  },
-  
-  // Weather Endpoints
-  async getCurrentWeather(latitude, longitude) {
-    return await api.get('/weather/current', {
-      params: { latitude, longitude }
-    });
-  },
+    async updateSpillStatus(spillId, status) {
+        const response = await api.put(`/dispersion/spills/${spillId}/status`, null, {
+            params: { status }
+        });
+        return response.data;
+    },
 
-  // Tide Endpoints
-  async getTideForecast(latitude, longitude, hours) {
-    return await api.get('/tides/forecast', {
-      params: { latitude, longitude, hours }
-    });
-  },
+    async calculateDispersion(spillId, simulationHours = 24) {
+        const response = await api.post(`/dispersion/spills/${spillId}/calculate`, null, {
+            params: { simulationHours }
+        });
+        return response.data;
+    },
 
-  // Real-time updates endpoint
-  subscribeToUpdates(onUpdate) {
-    // Correct URL to use relative path without repeating /api
-    const eventSource = new EventSource('/api/real-time-updates');
-    
-    eventSource.onmessage = (event) => {
-      onUpdate(JSON.parse(event.data));
-    };
+    // System Status
+    async getSystemStatus() {
+        const response = await api.get('/dispersion/status');
+        return response.data;
+    },
 
-    eventSource.onerror = (error) => {
-      console.error('EventSource failed:', error);
-      eventSource.close();
-    };
+    // Weather Endpoints
+    async getCurrentWeather(latitude, longitude) {
+        const response = await api.get('/weather/current', {
+            params: { latitude, longitude }
+        });
+        return response.data;
+    },
 
-    return () => eventSource.close();
-  },
+    async getWeatherForecast(latitude, longitude, hours = 72) {
+        const response = await api.get('/weather/forecast', {
+            params: { latitude, longitude, hoursAhead: hours }
+        });
+        return response.data;
+    },
 
-  // Other utility functions (keep these at the end)
-  async retryRequest(requestFunction, maxRetries = 3, delay = 1000) {
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        return await requestFunction();
-      } catch (error) {
-        if (attempt === maxRetries) {
-          throw error;
+    // Tide Endpoints - Fixed function names
+    async getTidalData(latitude, longitude, hours = 72) {
+        const response = await api.get('/tides/forecast', {
+            params: { latitude, longitude, hoursAhead: hours }
+        });
+        return response.data;
+    },
+
+    async getTideForecast(latitude, longitude, hours = 72) {
+        const response = await api.get('/tides/forecast', {
+            params: { latitude, longitude, hoursAhead: hours }
+        });
+        return response.data;
+    },
+
+    // Chemical Properties - Added missing methods
+    async getChemicalData(chemicalName) {
+        try {
+            const response = await api.get(`/dispersion/chemicals/${encodeURIComponent(chemicalName)}`);
+            return response.data;
+        } catch (error) {
+            console.warn(`Chemical data not found for ${chemicalName}`);
+            return null;
         }
-        console.warn(`Retrying API call (${attempt}/${maxRetries}) in ${delay}ms...`);
-        await new Promise(resolve => setTimeout(resolve, delay));
-        delay *= 2;
-      }
-    }
-  },
+    },
 
-  async batchRequests(requests, batchSize = 5, delay = 100) {
-    const results = [];
-    for (let i = 0; i < requests.length; i += batchSize) {
-      const batch = requests.slice(i, i + batchSize);
-      const batchResults = await Promise.allSettled(batch);
-      results.push(...batchResults);
-      if (i + batchSize < requests.length) {
-        await new Promise(resolve => setTimeout(resolve, delay));
-      }
-    }
-    return results;
-  },
+    async storeChemicalData(chemicalData) {
+        const response = await api.post('/dispersion/chemicals', chemicalData);
+        return response.data;
+    },
 
-  formatCoordinates(lat, lng, precision = 6) {
-    return {
-      latitude: parseFloat(lat.toFixed(precision)),
-      longitude: parseFloat(lng.toFixed(precision))
-    };
-  },
+    async getChemicalProperties(chemicalName) {
+        try {
+            const response = await api.get(`/dispersion/chemicals/${encodeURIComponent(chemicalName)}`);
+            return response.data;
+        } catch (error) {
+            console.warn(`Chemical properties not found for ${chemicalName}`);
+            return null;
+        }
+    },
 
-  validateSpillData(spillData) {
-    const required = ['name', 'chemicalType', 'volume', 'latitude', 'longitude', 'spillTime'];
-    const errors = [];
-    for (const field of required) {
-      if (!spillData[field]) errors.push(`${field} is required`);
+    // Real-time updates endpoint
+    subscribeToUpdates(onUpdate) {
+        const eventSource = new EventSource('/api/real-time-updates');
+        
+        eventSource.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                onUpdate(data);
+            } catch (error) {
+                console.error('Error parsing SSE data:', error);
+            }
+        };
+        
+        eventSource.onerror = (error) => {
+            console.error('EventSource failed:', error);
+            eventSource.close();
+        };
+        
+        return () => eventSource.close();
+    },
+
+    // Utility functions
+    async retryRequest(requestFunction, maxRetries = 3, delay = 1000) {
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                return await requestFunction();
+            } catch (error) {
+                if (attempt === maxRetries) {
+                    throw error;
+                }
+                console.warn(`Retrying API call (${attempt}/${maxRetries}) in ${delay}ms...`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+                delay *= 2;
+            }
+        }
+    },
+
+    formatCoordinates(lat, lng, precision = 6) {
+        return {
+            latitude: parseFloat(lat.toFixed(precision)),
+            longitude: parseFloat(lng.toFixed(precision))
+        };
+    },
+
+    validateSpillData(spillData) {
+        const required = ['name', 'chemicalType', 'volume', 'latitude', 'longitude', 'spillTime'];
+        const errors = [];
+        
+        for (const field of required) {
+            if (!spillData[field]) errors.push(`${field} is required`);
+        }
+        
+        if (spillData.volume && spillData.volume <= 0) errors.push('Volume must be positive');
+        if (spillData.latitude && (spillData.latitude < -90 || spillData.latitude > 90)) {
+            errors.push('Latitude must be between -90 and 90');
+        }
+        if (spillData.longitude && (spillData.longitude < -180 || spillData.longitude > 180)) {
+            errors.push('Longitude must be between -180 and 180');
+        }
+        
+        return errors;
     }
-    if (spillData.volume && spillData.volume <= 0) errors.push('Volume must be positive');
-    if (spillData.latitude && (spillData.latitude < -90 || spillData.latitude > 90)) errors.push('Latitude must be between -90 and 90');
-    if (spillData.longitude && (spillData.longitude < -180 || spillData.longitude > 180)) errors.push('Longitude must be between -180 and 180');
-    return errors;
-  }
 };

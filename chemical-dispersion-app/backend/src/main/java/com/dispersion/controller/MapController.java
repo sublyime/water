@@ -1,14 +1,18 @@
 package com.dispersion.controller;
 
 import com.dispersion.dto.DispersionResponse;
+import com.dispersion.dto.SpillRequest;
 import com.dispersion.model.Spill;
 import com.dispersion.service.DispersionService;
-import com.dispersion.service.SpillService; // Add this import if not already present
-
+import com.dispersion.service.SpillService;
+import com.dispersion.service.WeatherService;
+import com.dispersion.service.TideService;
+import com.dispersion.service.ChemicalService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 
@@ -21,16 +25,25 @@ public class MapController {
     private DispersionService dispersionService;
 
     @Autowired
-    private SpillService spillService; // Inject SpillService for the new method
+    private SpillService spillService;
+
+    @Autowired
+    private WeatherService weatherService;
+
+    @Autowired
+    private TideService tideService;
+
+    @Autowired
+    private ChemicalService chemicalService;
 
     @GetMapping("/spills")
-    public ResponseEntity<List<Spill>> getActiveSpills() { // Renamed for clarity; returns active spills
+    public ResponseEntity<List<Spill>> getActiveSpills() {
         List<Spill> spills = dispersionService.getActiveSpills();
         return ResponseEntity.ok(spills);
     }
 
     @GetMapping("/spills/all")
-    public ResponseEntity<List<Spill>> getAllSpills() { // Moved from SpillController; returns ALL spills
+    public ResponseEntity<List<Spill>> getAllSpills() {
         List<Spill> spills = spillService.findAll();
         return ResponseEntity.ok(spills);
     }
@@ -46,9 +59,14 @@ public class MapController {
     }
 
     @PostMapping("/spills")
-    public ResponseEntity<Spill> createSpill(@RequestBody com.dispersion.dto.SpillRequest spillRequest) {
+    public ResponseEntity<Spill> createSpill(@Valid @RequestBody SpillRequest spillRequest) {
         try {
+            // Get chemical properties from PubChem
+            chemicalService.getOrFetchChemicalProperties(spillRequest.getChemicalType());
+
+            // Create spill with environmental data
             Spill spill = dispersionService.createSpill(spillRequest);
+
             return ResponseEntity.ok(spill);
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
@@ -76,9 +94,10 @@ public class MapController {
     @PutMapping("/spills/{id}/status")
     public ResponseEntity<Spill> updateSpillStatus(
             @PathVariable UUID id,
-            @RequestParam Spill.SpillStatus status) {
+            @RequestParam String status) {
         try {
-            Spill spill = dispersionService.updateSpillStatus(id, status);
+            Spill.SpillStatus spillStatus = Spill.SpillStatus.valueOf(status.toUpperCase());
+            Spill spill = dispersionService.updateSpillStatus(id, spillStatus);
             return ResponseEntity.ok(spill);
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();

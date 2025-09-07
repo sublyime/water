@@ -9,9 +9,11 @@ C:.
 │   │       BaseMap.js
 │   │
 │   ├───Dashboard
+│   │       Dashboard.css
 │   │       Dashboard.js
 │   │
 │   ├───Forms
+│   │       SpillForm.css
 │   │       SpillForm.js
 │   │
 │   ├───Map
@@ -30,6 +32,7 @@ C:.
 │   │       Weather.js
 │   │
 │   └───Weather
+│           WeatherPanel.css
 │           WeatherPanel.js
 │
 ├───resources

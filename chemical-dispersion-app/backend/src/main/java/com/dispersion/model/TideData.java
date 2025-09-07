@@ -1,7 +1,7 @@
 package com.dispersion.model;
 
-import javax.persistence.*;
-import javax.validation.constraints.NotNull;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.GenericGenerator;
 
@@ -54,6 +54,7 @@ public class TideData {
     @Column(name = "source", length = 50)
     private String source;
 
+    // All getters and setters remain the same
     public UUID getId() {
         return id;
     }
